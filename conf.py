@@ -185,7 +185,7 @@ htmlhelp_basename = 'DeployingDjangoonasingleDebianorUbuntuserverdoc'
 
 latex_elements = {
 # The paper size ('letterpaper' or 'a4paper').
-#'papersize': 'letterpaper',
+'papersize': 'a5paper',
 
 # The font size ('10pt', '11pt' or '12pt').
 #'pointsize': '10pt',
@@ -198,7 +198,7 @@ latex_elements = {
 # (source start file, target name, title,
 #  author, documentclass [howto, manual, or own class]).
 latex_documents = [
-  ('index', 'DeployingDjangoonasingleDebianorUbuntuserver.tex', u'Deploying Django on a single Debian or Ubuntu server Documentation',
+  ('index', 'DeployingDjangoonasingleDebianorUbuntuserver.tex', u'Deploying Django on a single Debian or Ubuntu server',
    u'Antonis Christofides', 'manual'),
 ]
 
@@ -228,7 +228,7 @@ latex_documents = [
 # One entry per manual page. List of tuples
 # (source start file, name, description, authors, manual section).
 man_pages = [
-    ('index', 'deployingdjangoonasingledebianorubuntuserver', u'Deploying Django on a single Debian or Ubuntu server Documentation',
+    ('index', 'deployingdjangoonasingledebianorubuntuserver', u'Deploying Django on a single Debian or Ubuntu server',
      [u'Antonis Christofides'], 1)
 ]
 
@@ -242,7 +242,7 @@ man_pages = [
 # (source start file, target name, title, author,
 #  dir menu entry, description, category)
 texinfo_documents = [
-  ('index', 'DeployingDjangoonasingleDebianorUbuntuserver', u'Deploying Django on a single Debian or Ubuntu server Documentation',
+  ('index', 'DeployingDjangoonasingleDebianorUbuntuserver', u'Deploying Django on a single Debian or Ubuntu server',
    u'Antonis Christofides', 'DeployingDjangoonasingleDebianorUbuntuserver', 'One line description of project.',
    'Miscellaneous'),
 ]
