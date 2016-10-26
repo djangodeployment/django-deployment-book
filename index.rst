@@ -150,11 +150,12 @@ The user Django will be running as
 
 It's a good idea to not run Django as root. I create a user specifically
 for that, to which I give the same name as the Django app or project. In
-our case, we will use ``your_django_project`` as the name of the user::
+our case, we will use ``your_django_project`` as the name of the user:
+
+.. code-block:: bash
 
     adduser --system --home=/var/local/lib/your_django_project \
-        --no-create-home --disabled-password --disabled-login \
-        your_django_project
+        --no-create-home --disabled-password your_django_project
 
 Here is why we use these parameters:
 
@@ -184,11 +185,6 @@ Here is why we use these parameters:
     can always become another user (e.g. with ``su``) without using a
     password, so we don't need one.
 
-**--disabled-login**
-    Even if we enable a password, or even if we try to use ssh public
-    key authentication, the user won't be able to login. The root user
-    will still be able to become this user, however.
-
 Your program files
 ------------------
 
@@ -217,7 +213,9 @@ standard Debian directory for program files that are not installed with
 ``apt-get``. So, clone or otherwise copy your django project in
 ``/usr/local/your_django_project`` or in
 ``/usr/local/your_repository_root``. Do this **as the root user**.
-Create the virtualenv for your project **as the root user** as well::
+Create the virtualenv for your project **as the root user** as well:
+
+.. code-block:: bash
 
     virtualenv --system-site-packages --python=/usr/bin/python3 \
         /usr/local/your_django_project-virtualenv
@@ -234,7 +232,9 @@ This poses a problem: when the ``your_django_project`` user attempts to
 execute your Django application, it will not have permission to write
 the compiled Python files in the ``/usr/local/your_django_project``
 directory, because this is owned by root. So we need to pre-compile
-these files as root::
+these files as root:
+
+.. code-block:: bash
 
     /usr/local/your_django_project-virtualenv/bin/python -m compileall \
         /usr/local/your_django_project
@@ -249,7 +249,9 @@ policy where the data for programs other than those installed with
 media files in there (but this in a chapter later). We will also store
 the SQLite file in there. Usually in production we use a different
 RDBMS, but we will deal with this in a later chapter as well. So, let's
-now prepare the data directory::
+now prepare the data directory:
+
+.. code-block:: bash
 
     mkdir -p /var/local/lib/your_django_project
     chown your_django_project /var/local/lib/your_django_project
@@ -263,7 +265,9 @@ Your production settings
 ------------------------
 
 Debian puts configuration files in ``/etc``, and it is a good idea to
-place our configuration there as well::
+place our configuration there as well:
+
+.. code-block:: bash
 
     mkdir /etc/your_django_project
 
@@ -334,7 +338,9 @@ If you don't use this pattern at all, and you have a single
 
 Your settings file and the ``/etc/your_django_project`` directory is
 owned by root, and, as with the files in ``/usr/local``, won't be able
-to write the compile version, so pre-compile it as root::
+to write the compile version, so pre-compile it as root:
+
+.. code-block:: bash
 
     /usr/local/your_django_project-virtualenv/bin/python -m compileall \
         /etc/your_django_project
@@ -342,7 +348,8 @@ to write the compile version, so pre-compile it as root::
 Running the Django development server under the new scheme
 ----------------------------------------------------------
 
-::
+.. code-block:: bash
+
     su your_django_project
     source /usr/local/your_django_project-virtualenv/bin/activate
     export PYTHONPATH=/etc/your_django_project:/usr/local/your_django_project
@@ -351,7 +358,9 @@ Running the Django development server under the new scheme
     python /usr/local/your_django_project/manage.py runserver 0.0.0.0:8000
 
 You could also do that in an exceptionally long command (provided you
-have already done the ``migrate`` part), like this::
+have already done the ``migrate`` part), like this:
+
+.. code-block:: bash
 
     PYTHONPATH=/etc/your_django_project:/usr/local/your_django_project \
         DJANGO_SETTINGS_MODULE=settings \
@@ -415,17 +424,19 @@ Chapter summary
    and ``DJANGO_SETTINGS_MODULE=settings``.
 
 
-Installing nginx
-================
+The web server (nginx)
+======================
 
-If you have no preference among apache vs. nginx, use nginx. The 
-reason I recommend this is that most people deploying Django nowadays
-seem to be using nginx, so it may be easier for you to find more
-resources. However, apache is also an excellent choice, it is widely
-used, and it is preferable in some cases. If you have some reason to
-prefer it, go ahead and use it, and skip this chapter; read the next
-chapter instead. If you want to know the pros and cons of each solution,
-there is an article at the Appendix.
+Both nginx and apache are excellent choices for a web server. Most
+people deploying Django nowadays seem to be using nginx, so, if you
+aren't interested in learning more about what you should choose, pick up
+nginx and stop reading this paragraph.  Apache is also widely used, and
+it is preferable in some cases. If you have some reason to prefer it, go
+ahead and use it, and skip this chapter; read the next chapter instead.
+If you want to know more, there is an article at the Appendix.
+
+Installing
+----------
 
 Install nginx like this::
 
@@ -440,12 +451,146 @@ Install nginx like this::
 After you install, go to your web browser and visit
 http://www.yourowndomain.com/. You should see nginx's welcome page.
 
+Configuring yourowndomain.com
+-----------------------------
+
+Create file ``/etc/nginx/sites-available/yourowndomain.com`` with the
+following contents:
+
+.. code-block:: nginx
+
+    server {
+        listen 80;
+        listen [::]:80;
+        server_name yourowndomain.com www.yourowndomain.com;
+        root /var/www/yourowndomain.com;
+    }
+
+Create a symbolic link in ``sites-enabled``:
+
+.. code-block:: bash
+
+    cd /etc/nginx/sites-enabled
+    ln -s ../sites-available/yourowndomain.com .
+
+Tell nginx to re-read its configuration:
+
+.. code-block:: bash
+
+    service nginx reload
+
+Finally, create directory ``/var/www/yourowndomain.com``, and inside
+that directory create a file ``index.html`` with the following
+contents:
+
+.. code-block:: html
+
+    <p>This is the web site for yourowndomain.com.</p>
+
+Fire up your browser and visit http://yourowndomain.com/, and you should
+see the page you created.
+
+The fact that we named the nginx configuration file (in
+``/etc/nginx/sites-available``) ``yourowndomain.com`` is irrelevant; any
+name would have worked the same, but it's a convention to name it with
+the domain name. In fact, we needn't even have created a separate file.
+The only configuration file nginx needs is ``/etc/nginx/nginx.conf``. If
+you open that file, you will see that it contains, among others, the
+following line::
+
+   include /etc/nginx/sites-enabled/*;
+
+So what it does is read all files in that directory and process them as
+if their contents had been inserted in that point of
+``/etc/nginx/nginx.conf``.
+
+As we noticed, if you visit http://yourowndomain.com/, you see the page
+you created. If, however, you visit http://[server_ip_address]/, you
+should see nginx's welcome page.  If the host name (the part between
+"http://" and the next slash) is yourowndomain.com or
+www.yourowndomain.com, then nginx uses the configuration we specified
+above, because of the ``server_name`` configuration directive which
+contains these two domain names. If we use another domain name, or the
+server's ip address, there is no matching ``server { ... }`` block in
+the nginx configuration, so nginx uses its default configuration. That
+default configuration is in ``/etc/nginx/sites-enabled/default``. What
+makes it the default is the ``default_server`` parameter in these two
+lines:
+
+.. code-block:: nginx
+
+    listen 80 default_server;
+    listen [::]:80 default_server;
+    
+If someone arrives at my server through the wrong domain name, I don't
+want them to see a page that says "Welcome to nginx", so I change the
+default configuration to the following, which merely responds with "Not
+found":
+
+.. code-block:: nginx
+
+    server {
+        listen 80 default_server;
+        listen [::]:80 default_server;
+        return 404;
+    }
+    
+Configuring nginx for django
+----------------------------
+
+Change ``/etc/nginx/sites-available/yourowndomain.com`` to the following
+(which only differs from the one we just created in that it has the
+``location`` block):
+
+.. code-block:: nginx
+
+    server {
+        listen 80;
+        listen [::]:80;
+        server_name yourowndomain.com www.yourowndomain.com;
+        root /var/www/yourowndomain.com;
+        location / {
+            proxy_pass http://localhost:8000;
+        }
+    }
+
+Tell nginx to reload its configuration::
+
+    service nginx reload
+
+Finally, start your Django server as we saw in the previous chapter;
+however, it doesn't need to listen on 0.0.0.0:8000, a mere 8000 is
+enough:
+
+.. code-block:: bash
+
+    PYTHONPATH=/etc/your_django_project:/usr/local/your_django_project \
+        DJANGO_SETTINGS_MODULE=settings \
+        su your_django_project -c \
+        "/usr/local/your_django_project-virtualenv/bin/python \
+        /usr/local/your_django_project/manage.py runserver 8000"
+    
+Now go to http://yourowndomain.com/ and you should see your Django
+project in action.
+
+Nginx receives your HTTP request. Because of the ``proxy_pass``
+directive, it decides to just pass on this request to another server,
+which in our case is localhost:8000. 
+
+TODO: Add more parameters in ``location /`` and explain them.
+
+
+
+
+
 Appendix
 ========
 
 TODO: Environment variables
 
 TODO: su and sudo
+
+TODO: apache vs nginx
 
 
 .. hint:: Debian or Ubuntu?
