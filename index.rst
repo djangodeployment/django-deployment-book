@@ -129,6 +129,8 @@ following reasons:
  * You have put your project in some random directory.
  * You are running Django as root.
  * You have Django serve your static files, and you have DEBUG=True.
+ * You are using ``runserver``, which is seriously suboptimal and only
+   meant for development.
  * You are using SQLite.
 
 Let's go fix them.
@@ -193,19 +195,19 @@ Your program files
 Your Django project should be structured either like this::
 
     your_django_project/
-    ├── manage.py
-    ├── requirements.txt
-    ├── your_django_app/
-    └── your_django_project/
+    |-- manage.py
+    |-- requirements.txt
+    |-- your_django_app/
+    `-- your_django_project/
 
 or like this::
 
     your_repository_root/
-    ├── requirements.txt
-    └── your_django_project/
-        ├── manage.py
-        ├── your_django_app/
-        └── your_django_project/
+    |-- requirements.txt
+    `-- your_django_project/
+        |-- manage.py
+        |-- your_django_app/
+        `-- your_django_project/
 
 I prefer the former, but some people prefer the extra repository root
 directory.
@@ -257,8 +259,8 @@ Besides creating the directory, we also changed its owner to the
 needing to write data in that directory, and it will be running as that
 user, so it needs permission to do so.
 
-You production settings
------------------------
+Your production settings
+------------------------
 
 Debian puts configuration files in ``/etc``, and it is a good idea to
 place our configuration there as well::
@@ -339,9 +341,78 @@ to write the compile version, so pre-compile it as root::
 
 Running the Django development server under the new scheme
 ----------------------------------------------------------
-    
-TODO
 
+::
+    su your_django_project
+    source /usr/local/your_django_project-virtualenv/bin/activate
+    export PYTHONPATH=/etc/your_django_project:/usr/local/your_django_project
+    export DJANGO_SETTINGS_MODULE=settings
+    python /usr/local/your_django_project/manage.py migrate
+    python /usr/local/your_django_project/manage.py runserver 0.0.0.0:8000
+
+You could also do that in an exceptionally long command (provided you
+have already done the ``migrate`` part), like this::
+
+    PYTHONPATH=/etc/your_django_project:/usr/local/your_django_project \
+        DJANGO_SETTINGS_MODULE=settings \
+        su your_django_project -c \
+        "/usr/local/your_django_project-virtualenv/bin/python \
+        /usr/local/your_django_project/manage.py runserver 0.0.0.0:8000"
+
+Do you understand that very clearly? If not, here is some tips:
+
+ * Make sure you have a grip on ``virtualenv``, environment variables,
+   and ``su``; all these are explained in the Appendix.
+ * Python reads the ``PYTHONPATH`` environment variable and adds
+   the specified directories to the Python path.
+ * Django reads the ``DJANGO_SETTINGS_MODULE`` environment variable.
+   Because we have set it to "settings", Django will attempt to import
+   ``settings`` instead of the default (the default is
+   ``your_django_project.settings``, or maybe
+   ``your_django_project.settings.local``).
+ * When Django attempts to import ``settings``, Python looks in its
+   path. Because ``/etc/your_djangoproject`` is listed first in
+   ``PYTHONPATH``, Python will first look there for ``settings.py``, and
+   it will find it there.
+ * Likewise, when at some point Django attempts to import
+   ``your_django_app``, Python will look in
+   ``/etc/your_django_project``; it won't find it there, so then it will
+   look in ``/usr/local/your_django_project``, since this is next in
+   ``PYTHONPATH``, and it will find it there.
+ * If, before running ``manage.py [whatever]``, we had changed directory
+   to ``/usr/local/your_django_project``, we wouldn't need to specify
+   that directory in ``PYTHONPATH``, because Python always adds the
+   current directory to its path. This is why, in development, you just
+   tell it ``python manage.py [whatever]`` and it finds your project.
+   We prefer, however, to set the ``PYTHONPATH`` and not change
+   directory; this way our setup will be clearer and more robust.
+
+If you fire up your browser and visit http://yourowndomain.com:8000/,
+you should see your Django project in action. Still wrong of course; we
+are still using the Django development server, but we have accomplished
+the first step, which was to use an appropriate user and put stuff in
+appropriate directories.
+
+Chapter summary
+---------------
+
+ * Create a system user with the same name as your Django project.
+ * Put your Django project in ``/usr/local``, with all files owned by
+   root.
+ * Put your virtualenv in ``/usr/local``, with the directory named like
+   your Django project with ``-virtualenv`` appended, with all files
+   owned by root.
+ * Put your data files in a subdirectory of ``/var/local/lib`` with the
+   same name as your Django project, owned by the system user you
+   created. If you are using SQLite, the database file will go in there.
+ * Put your settings file in a subdirectory of ``/etc`` with the same
+   name as your Django project, with all files owned by root.
+ * Precompile the files in ``/usr/local/your_django_project`` and
+   ``/etc/your_django_project``.
+ * Run ``manage.py`` as the system user you created, after specifying
+   the environment variables
+   ``PYTHONPATH=/etc/your_django_project:/usr/local/your_django_project``
+   and ``DJANGO_SETTINGS_MODULE=settings``.
 
 
 Installing nginx
@@ -371,6 +442,11 @@ http://www.yourowndomain.com/. You should see nginx's welcome page.
 
 Appendix
 ========
+
+TODO: Environment variables
+
+TODO: su and sudo
+
 
 .. hint:: Debian or Ubuntu?
 
