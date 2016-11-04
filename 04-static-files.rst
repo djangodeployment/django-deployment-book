@@ -1,0 +1,2 @@
+Serving static files
+====================
