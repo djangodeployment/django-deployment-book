@@ -163,7 +163,6 @@ we will be necessary later. The ``location`` block actually becomes:
 
    location / {
        proxy_pass http://localhost:8000;
-       proxy_pass_header Server;
        proxy_set_header Host $http_host;
        proxy_redirect off;
        proxy_set_header X-Real-IP $remote_addr;
@@ -175,18 +174,21 @@ we will be necessary later. The ``location`` block actually becomes:
 
 Here is what these configuration directives do:
 
-**proxy_pass_header Server**
-   By default, nginx doesn't pass all the HTTP request headers to the
-   backend; it only passes TODO. This directive tells it to also pass
-   the ``Server`` header; this is necessary because TODO.
 **proxy_set_header Host $http_host**
-   The ``Host`` header also needs to be passed. (If you don't understand
-   the ``Host`` header, read "How apache/nginx virtual hosts work" in
-   the Appendix.) The reason is that when, later, we set
-   ``DEBUG=False``, Django will need to know the ``Host`` in order to
-   check if it's in ``ALLOWED_HOSTS``.
+   By default, the header of the request nginx makes to the backend
+   includes ``Host: localhost`` (if you don't understand the ``Host``
+   header, read "How apache/nginx virtual hosts work" in the Appendix).
+   We prefer to pass the real ``Host`` to Django (i.e. the one received
+   by nginx).  later, we set ``DEBUG=False``, Django will need to know
+   the ``Host`` in order to check if it's in ``ALLOWED_HOSTS``.
 **proxy_redirect off**
-   TODO
+   This tells nginx that, if the backend returns an HTTP redirect, it
+   should leave it as is. (By default, nginx assumes the backend is
+   stupid and tries to be smart; if the backend returns an HTTP redirect
+   that says "redirect to http://localhost:8000/somewhere", nginx
+   replaces it with something similar to
+   http://yourowndomain.com/somewhere". We prefer to configure Django
+   properly instead.)
 **proxy_set_header X-Real-IP $remote_addr**
    To Django, the request is coming from nginx, and therefore the
    network connection appears to be from localhost, i.e. from address
@@ -194,27 +196,41 @@ Here is what these configuration directives do:
    IP address of the machine that runs the web browser; they might need
    that for access control, or to use the GeoIP database to deliver
    different content to different geographical areas. So we have nginx
-   pass the actual IP address of the visitor in the ``X-Real-IP`` header
-   (TODO: Django needs configuration?) Your Django project might not
-   make use of this information, but it might do so in the future, and
-   it's better to set the correct nginx configuration from now.
-**proxy_set_header X-Scheme $scheme**
-    Another thing that Django does not now is whether the request has
+   pass the actual IP address of the visitor in the ``X-Real-IP``
+   header.  Your Django project might not make use of this information,
+   but it might do so in the future, and it's better to set the correct
+   nginx configuration from now. When the time comes to use this
+   information, you will need to configure your Django app properly; one
+   way is to use django-ipware_.
+
+.. _django-ipware: https://github.com/un33k/django-ipware
+
+**proxy_set_header X-Forwarded-Proto $scheme**
+    Another thing that Django does not know is whether the request has
     been made through HTTPS or plain HTTP; nginx knows that, but the
     request it subsequently makes to the Django backend is always plain
-    HTTP. We tell nginx to pass this information with the ``X-Scheme``
-    header, so that related Django functionality such as
-    ``request.is_secure()`` works properly. (TODO: Does Django need
-    configuration?)
+    HTTP. We tell nginx to pass this information with the
+    ``X-Forwarded-Proto`` HTTP header, so that related Django
+    functionality such as ``request.is_secure()`` works properly. You
+    will also need to set ``SECURE_PROXY_SSL_HEADER =
+    ('HTTP_X_FORWARDED_PROTO', 'https')`` in your ``settings.py``.
 **proxy_connect_timeout 10**
-    TODO
+    In each request, nginx attempts to connect to the backend. If the
+    backend takes too long to accept the connection, nginx responds to
+    the user with 502. By default, the timeout is 60 seconds. This is
+    too much, so we change it to 10 seconds (which is also really
+    conservative; the backend should accept the connection instantly).
 **proxy_read_timeout 30**
-    TODO
+    After nginx connects to the backend and sends the request, it waits
+    for the response. If the backend takes too long without responding,
+    nginx responds to the user with 502. By default, the timeout is 60
+    seconds. This is too much, so we change it to 30 seconds. The user
+    will have gone away earlier anyway.
 **client_max_body_size 20m**
    This tells nginx to accept responses from the Django backend up to 20
-   MB; if a response is larger nginx ignores it and returns a 502 (TODO:
-   really 502?). 20 MB is a reasonable maximum, unlike nginx's default
-   setting, which is TODO.
+   MB; if a response is larger nginx ignores it and returns a 413.  20
+   MB is a reasonable maximum, unlike nginx's default setting, which is
+   1 MB.
 
 This concludes the part of the chapter about nginx. If you chose nginx
 as your web server, you probably want to skip the next sections and go
@@ -244,7 +260,7 @@ the following contents:
        DocumentRoot /var/www/yourowndomain.com;
    </VirtualHost>
 
-   TODO: check the above*
+   TODO: check the above
 
 Create a symbolic link in ``sites-enabled``:
 
@@ -376,6 +392,6 @@ Chapter summary
 * Use the ``proxy_pass`` (nginx) or ``ProxyPass`` (apache) directive to
   pass the HTTP request to Django.
 * Configure the web server to pass HTTP request headers ``Server``,
-  ``X-Real-IP``, and ``X-Scheme``.
+  ``X-Real-IP``, and ``X-Forwarded-Proto``.
 * TODO: proxy_redirect, connect timeout, read timeout, client
   _max_body_size
