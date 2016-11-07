@@ -1,0 +1,84 @@
+#!/bin/bash
+# When run on a brand new server, this script follows all instructions of the
+# book in turn. Useful for getting the server up to a point and continuing to
+# write the book afterwards, then destroying the server, retrying, and so on.
+# The script is manually written and maintained, i.e. copied and pasted from
+# the book. It isn't smart enough to know when the scripts in the book have
+# changed.
+
+set -e
+
+# Update and install stuff (TODO: put it in the book)
+apt-get update
+apt-get -y upgrade
+apt-get install -y git python3 virtualenvwrapper
+
+# Users and directories
+if ! getent passwd your_django_project; then
+    adduser --system --home=/var/local/lib/your_django_project \
+        --no-create-home --disabled-password --group \
+        your_django_project
+fi
+cd /usr/local
+[ -d your_django_project/.git ] \
+    || git clone http://github.com/aptiko/your_django_project.git
+virtualenv --system-site-packages --python=/usr/bin/python3 \
+    /usr/local/your_django_project-virtualenv
+/usr/local/your_django_project-virtualenv/bin/pip install \
+    -r /usr/local/your_django_project/requirements.txt
+/usr/local/your_django_project-virtualenv/bin/python -m compileall \
+    /usr/local/your_django_project
+mkdir -p /etc/your_django_project
+cat <<EOF1 >/etc/your_django_project/settings.py
+from your_django_project.settings.base import *
+
+DEBUG = True
+
+DATABASES = {
+    'default': {
+        'ENGINE': 'django.db.backends.sqlite3',
+        'NAME': '/var/local/lib/your_django_project/your_django_project.db',
+    }
+}
+EOF1
+chgrp your_django_project /etc/your_django_project/settings.py
+chmod u=rw,g=r,o= /etc/your_django_project/settings.py
+/usr/local/your_django_project-virtualenv/bin/python -m compileall \
+    /etc/your_django_project
+chgrp -R your_django_project /etc/your_django_project/__pycache__
+
+# The web server (apache version)
+apt-get install -y apache2
+cat <<EOF1 >/etc/apache2/sites-available/yourowndomain.com.conf
+<VirtualHost *:80>
+    ServerName yourowndomain.com
+    ServerAlias www.yourowndomain.com
+    DocumentRoot /var/www/yourowndomain.com
+</VirtualHost>
+EOF1
+cd /etc/apache2/sites-enabled
+[ -e yourowndomain.com.conf ] \
+    || ln -s ../sites-available/yourowndomain.com.conf .
+service apache2 reload
+mkdir -p /var/www/yourowndomain.com
+echo '<p>This is the web site for yourowndomain.com.</p>' \
+    >/var/www/yourowndomain.com/index.html
+cat <<EOF1 >/etc/apache2/sites-available/000-default.conf
+<VirtualHost *:80>
+    DocumentRoot /var/www/html
+    Redirect 404 /
+</VirtualHost>
+EOF1
+service apache2 reload
+cat <<EOF1 >/etc/apache2/sites-available/yourowndomain.com.conf
+<VirtualHost *:80>
+   ServerName yourowndomain.com
+   ServerAlias www.yourowndomain.com
+   DocumentRoot /var/www/yourowndomain.com
+   <Location />
+     ProxyPass http://localhost:8000
+   </Location>
+</VirtualHost>
+EOF1
+a2enmod proxy proxy_http
+service apache2 reload
