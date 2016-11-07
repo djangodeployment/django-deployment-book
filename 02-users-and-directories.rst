@@ -89,6 +89,8 @@ Create the virtualenv for your project **as the root user** as well:
 
     virtualenv --system-site-packages --python=/usr/bin/python3 \
         /usr/local/your_django_project-virtualenv
+    /usr/local/your_django_project-virtualenv/bin/pip install \
+        -r /usr/local/your_django_project/requirements.txt
 
 While it might seem strange that we are creating these as the root user
 instead of as the ``your_django_project`` user, it is standard practice
@@ -163,7 +165,7 @@ that are the same whether in production or development or testing. The
 directory often contains ``local.py`` (alternatively named ``dev.py``),
 with common development settings, which might or might not be in the
 repository. There's often also ``test.py``, settings that are used when
-testing. Both ``local.py` and ``test.py`` start with this line::
+testing. Both ``local.py`` and ``test.py`` start with this line::
 
     from .base import *
 
