@@ -8,8 +8,8 @@ project in a proper place.
 I will be using ``your_django_project`` as the name of your Django
 project.
 
-The user Django will be running as
-----------------------------------
+Creating a user and group
+-------------------------
 
 It's a good idea to not run Django as root. I create a user specifically
 for that, to which I give the same name as the Django app or project. In
@@ -18,7 +18,8 @@ our case, we will use ``your_django_project`` as the name of the user:
 .. code-block:: bash
 
     adduser --system --home=/var/local/lib/your_django_project \
-        --no-create-home --disabled-password your_django_project
+        --no-create-home --disabled-password --group \
+        your_django_project
 
 Here is why we use these parameters:
 
@@ -48,8 +49,14 @@ Here is why we use these parameters:
     can always become another user (e.g. with ``su``) without using a
     password, so we don't need one.
 
-Your program files
-------------------
+**--group**
+    This tells ``adduser`` to not only add a new user, but to also add a
+    new group, having the same name as the user (``your_django_project``
+    in our case), and make the new user a member of the new group. We
+    will see further below why this is useful.
+
+The program files
+-----------------
 
 Your Django project should be structured either like this::
 
@@ -102,8 +109,8 @@ these files as root:
     /usr/local/your_django_project-virtualenv/bin/python -m compileall \
         /usr/local/your_django_project
 
-Your data directory
--------------------
+The data directory
+------------------
 
 As I already hinted, our data directory is going to be
 ``/var/local/lib/your_django_project``. This is in line with the Debian
@@ -124,8 +131,8 @@ Besides creating the directory, we also changed its owner to the
 needing to write data in that directory, and it will be running as that
 user, so it needs permission to do so.
 
-Your production settings
-------------------------
+The production settings
+-----------------------
 
 Debian puts configuration files in ``/etc``, and it is a good idea to
 place our configuration there as well:
@@ -199,17 +206,99 @@ If you don't use this pattern at all, and you have a single
 ``settings.py`` file, you should be importing from that one
 (``your_django_project.settings``) instead.
 
-Your settings file and the ``/etc/your_django_project`` directory is
-owned by root, and, as with the files in ``/usr/local``, won't be able
-to write the compile version, so pre-compile it as root:
+Let's now **secure the production settings**. We do not want other users
+of the system to be able to read the file, because it contains sensitive
+information. Maybe not yet, but after a few chapters it is going to have
+the secret key and the password to the database.  At this point, you are
+wondering: what other users? I am the only person using this server, and
+I have created no users. Indeed, now that it's so easy and cheap to get
+small servers and assign a single job to them, this detail is not so
+important as it used to be. However, it is still a good idea to harden
+things a little bit. Maybe a year later you will create a normal user
+account on that server as a little favour for a friend of yours.
+
+If ``your_django_project`` has a vulnerability, an attacker might be
+able to give commands to the system as the user as which the project
+runs (i.e. as the ``your_django_project`` user). Likewise, in the future
+you might install some other web application, and that other web
+application might have a vulnerability and could be attacked, and the
+attacker might be able to give commands as the user that application
+runs. In that case, the attacker wouldn't be able to read our
+``settings.py``, because he wouldn't have permission to do so.
+Eventually servers get compromised, and we try to set up the system in
+such a way to minimize the damage, and we can minimize it if we contain
+it, and we can contain it if the compromising of an application does not
+result in the compromising of other applications. This is why we want to
+run each application in its own user and its own group.
+
+Here is how to harden the permissions of ``settings.py``:
+
+.. code-block:: bash
+
+   chgrp your_django_project /etc/your_django_project/settings.py
+   chmod u=rw,g=r,o= /etc/your_django_project/settings.py
+
+What this does is make ``settings.py`` unreadable by users other than
+``root`` and user ``your_django_project``. The file is owned by
+``root``, and the first command above changes the group of the file so
+that it is ``your_django_project``. The second command changes the
+permissions of the file so that:
+
+**u=rw**
+   The owner has permission to read and write the file (the ``u`` in
+   ``u=rw`` stands for "user", but actually it means the "user who owns
+   the file"). The owner is ``root``.
+**g=r**
+   The group has permission to read the file. More precisely, users who
+   belong in that group have permission to read the file. The file's
+   group is ``your_django_project``. The only user in that group is
+   ``your_django_project``, so this adjustment applies only to that
+   user.
+**o=**
+   Other users have no permission, they can't read or write the file.
+
+You might have expected that it would have been easier to tell the
+system "I want user ``root`` to be able to read and write, and user
+``your_django_project`` to be able to only read". Instead, we did
+something much more complicated: we made user ``your_django_project``
+belong to a group (with the same name, but this doesn't matter), and we
+made the file readable by that group, thus indirectly readable by the
+user. The reason we did it this way is an accident of history. In Unix
+there has traditionally been no way to say "I want user ``root`` to be
+able to read and write, and user ``your_django_project`` to be able to
+only read". In many Unixes, including Linux, it is possible using Access
+Control Lists, but this is a feature added later, it is not the same in
+all Unixes, and its syntax is harder to use. The way we use here works
+the same in FreeBSD, HP-UX, and all other Unixes and it is common
+practice everywhere.
+
+Finally, we need to **compile** the settings file. Your settings file
+and the ``/etc/your_django_project`` directory is owned by root, and, as
+with the files in ``/usr/local``, won't be able to write the compile
+version, so we pre-compile it as root:
 
 .. code-block:: bash
 
     /usr/local/your_django_project-virtualenv/bin/python -m compileall \
         /etc/your_django_project
+    chgrp -R your_django_project /etc/your_django_project/__pycache__
 
-Running the Django development server under the new scheme
-----------------------------------------------------------
+When Python compiles a ``.py`` file, it gives the ``.pyc`` file the same
+mode as the original file, so in our case ``settings.pyc`` will be
+readable and writeable by the owner, readable by the group, and
+non-accessible by others. However, Python does not set the same owner
+and group to the ``.pyc`` file as in the original, which is why we need
+to change the group. The above ``chgrp`` command works with Python 3,
+and recursively modifies the group of directory
+``/etc/your_django_project/__pycache__`` and of the files it contains.
+In Python 2, use this instead:
+
+.. code-block:: bash
+
+    chgrp -R your_django_project /etc/your_django_project/settings.pyc
+
+Running the Django server
+-------------------------
 
 .. code-block:: bash
 
@@ -268,7 +357,8 @@ appropriate directories.
 Chapter summary
 ---------------
 
- * Create a system user with the same name as your Django project.
+ * Create a system user and group with the same name as your Django
+   project.
  * Put your Django project in ``/usr/local``, with all files owned by
    root.
  * Put your virtualenv in ``/usr/local``, with the directory named like
@@ -278,9 +368,13 @@ Chapter summary
    same name as your Django project, owned by the system user you
    created. If you are using SQLite, the database file will go in there.
  * Put your settings file in a subdirectory of ``/etc`` with the same
-   name as your Django project, with all files owned by root.
+   name as your Django project, with all files owned by root. Set
+   ``settings.py`` to belong to the system group you created, and to not
+   be readable by other users.
  * Precompile the files in ``/usr/local/your_django_project`` and
-   ``/etc/your_django_project``.
+   ``/etc/your_django_project``. Change the group of the compiled
+   configuration files to the system group you created and verify it's
+   not readable by other users.
  * Run ``manage.py`` as the system user you created, after specifying
    the environment variables
    ``PYTHONPATH=/etc/your_django_project:/usr/local/your_django_project``
