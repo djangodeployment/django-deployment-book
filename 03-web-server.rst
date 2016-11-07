@@ -257,10 +257,8 @@ the following contents:
    <VirtualHost *:80>
        ServerName yourowndomain.com
        ServerAlias www.yourowndomain.com
-       DocumentRoot /var/www/yourowndomain.com;
+       DocumentRoot /var/www/yourowndomain.com
    </VirtualHost>
-
-   TODO: check the above
 
 Create a symbolic link in ``sites-enabled``:
 
@@ -268,6 +266,19 @@ Create a symbolic link in ``sites-enabled``:
 
     cd /etc/apache2/sites-enabled
     ln -s ../sites-available/yourowndomain.com.conf .
+
+.. hint:: Use a2ensite
+
+   Debian-based systems have two convenient scripts, ``a2ensite``,
+   meaning "Apache 2 enable site", and its counterpart, ``a2dissite``,
+   for disabling a site. The first one merely creates the symbolic link
+   as above, the second one removes it. So the manual creation of the
+   symbolic link above is purely educational, and it's usually better to
+   save some typing by just entering this instead:
+
+   .. code-block:: bash
+
+      a2ensite yourowndomain.com
 
 Tell apache to re-read its configuration:
 
@@ -316,18 +327,21 @@ default is that it is listed first; the ``IncludeOptional`` in
 ``000-default`` has the ``000`` prefix to ensure it is first.
 
 If someone arrives at my server through the wrong domain name, I don't
-want them to see a page that says "Welcome to apache" (TODO: fix), so I
-change the default configuration to the following, which merely responds
-with "Not found":
+want them to see a page that says "It works!", so I change the default
+configuration to the following, which merely responds with "Not found":
 
 .. code-block:: apache
 
-   TODO
-    
+    <VirtualHost *:80>
+        DocumentRoot /var/www/html
+        Redirect 404 /
+    </VirtualHost>
+
+
 Configuring apache for django
 -----------------------------
 
-Change ``/etc/apache2/sites-available/yourowndomain.com`` to the
+Change ``/etc/apache2/sites-available/yourowndomain.com.conf`` to the
 following (which only differs from the one we just created in that it
 has the ``Location`` block):
 
@@ -336,13 +350,23 @@ has the ``Location`` block):
    <VirtualHost *:80>
        ServerName yourowndomain.com
        ServerAlias www.yourowndomain.com
-       DocumentRoot /var/www/yourowndomain.com;
+       DocumentRoot /var/www/yourowndomain.com
        <Location />
-         ProxyPass http://localhost:8000;
-       </Location
+         ProxyPass http://localhost:8000
+       </Location>
    </VirtualHost>
 
-   TODO: Check the above*
+In order for this to work, we actually first need to enable Apache
+modules ``proxy`` and ``proxy_http``:
+
+.. code-block:: bash
+
+   a2enmod proxy proxy_http
+
+(Similarly to ``a2ensite`` and ``a2dissite``, ``a2enmod`` and
+``a2dismod`` are merely convenient ways to create and delete symbolic
+links that point from ``/etc/apache2/mods-enabled`` to
+``/etc/apache2/mods-available``.)
 
 Tell apache to reload its configuration::
 
