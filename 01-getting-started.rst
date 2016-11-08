@@ -4,6 +4,8 @@ Getting started
 Things you need to know
 -----------------------
 
+TODO: Fix this
+
 Before continuing, please make sure you have the necessary background:
 
  * You can develop with **Django** and are familiar with executing stuff
@@ -29,8 +31,9 @@ instructive if you have a virtual machine on the network, and a domain
 name that points to it. So go to Hetzner, Digital Ocean, or whatever is
 your favourite provider, and get a virtual server. Also get a domain
 name and set it to point to the virtual server. In the rest of this book
-I will be using "yourowndomain.com" instead of the more accurate "the
-domain name under which your Django project is running".
+I will be using $DOMAIN to denote the domain under which your Django
+project is running; so you must mentally replace $DOMAIN with
+"mydomain.com" or whatever your domain is.
 
 Experimenting means we will be trying things. We will be installing your
 Django project and do things with it, and then we will be deleting it
@@ -41,9 +44,9 @@ a couple of minutes at most, with a sequence of commands similar to the
 following::
 
    apt-get install git python3 virtualenvwrapper
-   git clone [your_project's_repository]
-   cd your_project's_working_directory
-   mkvirtualenv --system-site-packages myproject
+   git clone $DJANGO_PROJECT_REPOSITORY
+   cd $DJANGO_PROJECT
+   mkvirtualenv --system-site-packages $DJANGO_PROJECT
    pip install -r requirements.txt
    python3 manage.py migrate
    python3 manage.py runserver
@@ -70,7 +73,7 @@ server with ``./manage.py runserver`` run it as follows::
     ./manage.py runserver 0.0.0.0:8000
 
 After it starts, go to your web browser and tell it to go to
-http://www.yourowndomain.com:8000/. You should see your Django project
+http://$DOMAIN:8000/. You should see your Django project
 in action.
 
 Usually you run the Django development server with ``./manage.py
@@ -90,9 +93,9 @@ This will cause Django to listen for connections on port 8000, both for
 IPv4 and IPv6.
 
 Next problem is that you can't possibly ask your users to use
-http://www.yourowndomain.com:8000/, you have to get rid of the ":8000"
-part. "http://www.yourowndomain.com/" is actually a synonym for
-"http://www.yourowndomain.com:80/", so we need to tell Django to listen
+http://$DOMAIN:8000/, you have to get rid of the ":8000"
+part. "http://$DOMAIN/" is actually a synonym for
+"http://$DOMAIN:80/", so we need to tell Django to listen
 on port 80 instead of 8000. This may or may not work::
 
     ./manage.py runserver 0.0.0.0:80
@@ -104,7 +107,7 @@ that you don't have permission to access that port.  Fix that problem by
 becoming root::
 
     sudo -s
-    cd [your_project_directory]
+    cd $DJANGO_PROJECT_DIRECTORY
     [activate your virtualenv]
     ./manage.py runserver 0.0.0.0:80
 
@@ -117,7 +120,7 @@ machine. Shut it down::
 
 When you finally get ``./manage.py runserver 0.0.0.0:80`` running, you
 should, at last, be able to go to your web browser and reach your Django
-project via http://www.yourowndomain.com/. Congratulations!
+project via http://$DOMAIN/. Congratulations!
 
 Things we need to fix
 ---------------------

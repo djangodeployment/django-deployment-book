@@ -27,13 +27,13 @@ Install nginx like this::
    ``nginx-extras``, which have more modules available. However,
    ``nginx-light`` is enough in most cases.
 
-After you install, go to your web browser and visit
-http://www.yourowndomain.com/. You should see nginx's welcome page.
+After you install, go to your web browser and visit http://$DOMAIN/. You
+should see nginx's welcome page.
 
-Configuring nginx to serve yourowndomain.com
---------------------------------------------
+Configuring nginx to serve the domain
+-------------------------------------
 
-Create file ``/etc/nginx/sites-available/yourowndomain.com`` with the
+Create file ``/etc/nginx/sites-available/$DOMAIN`` with the
 following contents:
 
 .. code-block:: nginx
@@ -41,16 +41,21 @@ following contents:
     server {
         listen 80;
         listen [::]:80;
-        server_name yourowndomain.com www.yourowndomain.com;
-        root /var/www/yourowndomain.com;
+        server_name $DOMAIN www.$DOMAIN;
+        root /var/www/$DOMAIN;
     }
+
+.. note::
+
+   Again, this is not a valid nginx configuration file until you replace
+   ``$DOMAIN`` with your actual domain name, such as "example.com".
 
 Create a symbolic link in ``sites-enabled``:
 
 .. code-block:: bash
 
     cd /etc/nginx/sites-enabled
-    ln -s ../sites-available/yourowndomain.com .
+    ln -s ../sites-available/$DOMAIN .
 
 Tell nginx to re-read its configuration:
 
@@ -58,24 +63,23 @@ Tell nginx to re-read its configuration:
 
     service nginx reload
 
-Finally, create directory ``/var/www/yourowndomain.com``, and inside
-that directory create a file ``index.html`` with the following
-contents:
+Finally, create directory ``/var/www/$DOMAIN``, and inside that
+directory create a file ``index.html`` with the following contents:
 
 .. code-block:: html
 
-    <p>This is the web site for yourowndomain.com.</p>
+    <p>This is the web site for $DOMAIN.</p>
 
-Fire up your browser and visit http://yourowndomain.com/, and you should
+Fire up your browser and visit http://$DOMAIN/, and you should
 see the page you created.
 
 The fact that we named the nginx configuration file (in
-``/etc/nginx/sites-available``) ``yourowndomain.com`` is irrelevant; any
-name would have worked the same, but it's a convention to name it with
-the domain name. In fact, we needn't even have created a separate file.
-The only configuration file nginx needs is ``/etc/nginx/nginx.conf``. If
-you open that file, you will see that it contains, among others, the
-following line::
+``/etc/nginx/sites-available``) ``$DOMAIN`` is irrelevant; any name
+would have worked the same, but it's a convention to name it with the
+domain name. In fact, strictly speaking, we needn't even have created a
+separate file.  The only configuration file nginx needs is
+``/etc/nginx/nginx.conf``. If you open that file, you will see that it
+contains, among others, the following line::
 
    include /etc/nginx/sites-enabled/*;
 
@@ -83,18 +87,17 @@ So what it does is read all files in that directory and process them as
 if their contents had been inserted in that point of
 ``/etc/nginx/nginx.conf``.
 
-As we noticed, if you visit http://yourowndomain.com/, you see the page
-you created. If, however, you visit http://[server_ip_address]/, you
-should see nginx's welcome page.  If the host name (the part between
-"http://" and the next slash) is yourowndomain.com or
-www.yourowndomain.com, then nginx uses the configuration we specified
-above, because of the ``server_name`` configuration directive which
-contains these two domain names. If we use another domain name, or the
-server's ip address, there is no matching ``server { ... }`` block in
-the nginx configuration, so nginx uses its default configuration. That
-default configuration is in ``/etc/nginx/sites-enabled/default``. What
-makes it the default is the ``default_server`` parameter in these two
-lines:
+As we noticed, if you visit http://$DOMAIN/, you see the page you
+created. If, however, you visit http://$SERVER_IP_ADDRESS/, you should
+see nginx's welcome page.  If the host name (the part between "http://"
+and the next slash) is $DOMAIN or www.$DOMAIN then nginx uses the
+configuration we specified above, because of the ``server_name``
+configuration directive which contains these two names. If we use
+another domain name, or the server's ip address, there is no matching
+``server { ... }`` block in the nginx configuration, so nginx uses its
+default configuration. That default configuration is in
+``/etc/nginx/sites-enabled/default``. What makes it the default is the
+``default_server`` parameter in these two lines:
 
 .. code-block:: nginx
 
@@ -117,7 +120,7 @@ found":
 Configuring nginx for django
 ----------------------------
 
-Change ``/etc/nginx/sites-available/yourowndomain.com`` to the following
+Change ``/etc/nginx/sites-available/$DOMAIN`` to the following
 (which only differs from the one we just created in that it has the
 ``location`` block):
 
@@ -126,8 +129,8 @@ Change ``/etc/nginx/sites-available/yourowndomain.com`` to the following
     server {
         listen 80;
         listen [::]:80;
-        server_name yourowndomain.com www.yourowndomain.com;
-        root /var/www/yourowndomain.com;
+        server_name $DOMAIN www.$DOMAIN;
+        root /var/www/$DOMAIN;
         location / {
             proxy_pass http://localhost:8000;
         }
@@ -143,13 +146,13 @@ enough:
 
 .. code-block:: bash
 
-   PYTHONPATH=/etc/your_django_project:/usr/local/your_django_project \
+   PYTHONPATH=/etc/$DJANGO_PROJECT:/usr/local/$DJANGO_PROJECT \
        DJANGO_SETTINGS_MODULE=settings \
-       su your_django_project -c \
-       "/usr/local/your_django_project-virtualenv/bin/python \
-       /usr/local/your_django_project/manage.py runserver 8000"
+       su $DJANGO_USER -c \
+       "/usr/local/$DJANGO_PROJECT-virtualenv/bin/python \
+       /usr/local/$DJANGO_PROJECT/manage.py runserver 8000"
     
-Now go to http://yourowndomain.com/ and you should see your Django
+Now go to http://$DOMAIN/ and you should see your Django
 project in action.
 
 Nginx receives your HTTP request. Because of the ``proxy_pass``
@@ -244,28 +247,33 @@ Install apache like this::
     apt-get install apache2
 
 After you install, go to your web browser and visit
-http://www.yourowndomain.com/. You should see apache's welcome page.
+http://$DOMAIN/. You should see apache's welcome page.
 
-Configuring apache to serve yourowndomain.com
----------------------------------------------
+Configuring apache to serve the domain
+--------------------------------------
 
-Create file ``/etc/apache2/sites-available/yourowndomain.com.conf`` with
+Create file ``/etc/apache2/sites-available/$DOMAIN.conf`` with
 the following contents:
 
 .. code-block:: apache
 
    <VirtualHost *:80>
-       ServerName yourowndomain.com
-       ServerAlias www.yourowndomain.com
-       DocumentRoot /var/www/yourowndomain.com
+       ServerName $DOMAIN
+       ServerAlias www.$DOMAIN
+       DocumentRoot /var/www/$DOMAIN
    </VirtualHost>
 
 Create a symbolic link in ``sites-enabled``:
 
+.. note::
+
+   Again, this is not a valid apache configuration file until you replace
+   ``$DOMAIN`` with your actual domain name, such as "example.com".
+
 .. code-block:: bash
 
     cd /etc/apache2/sites-enabled
-    ln -s ../sites-available/yourowndomain.com.conf .
+    ln -s ../sites-available/$DOMAIN.conf .
 
 .. hint:: Use a2ensite
 
@@ -278,7 +286,7 @@ Create a symbolic link in ``sites-enabled``:
 
    .. code-block:: bash
 
-      a2ensite yourowndomain.com
+      a2ensite $DOMAIN
 
 Tell apache to re-read its configuration:
 
@@ -286,22 +294,22 @@ Tell apache to re-read its configuration:
 
     service apache2 reload
 
-Finally, create directory ``/var/www/yourowndomain.com``, and inside
+Finally, create directory ``/var/www/$DOMAIN``, and inside
 that directory create a file ``index.html`` with the following
 contents:
 
 .. code-block:: html
 
-    <p>This is the web site for yourowndomain.com.</p>
+    <p>This is the web site for $DOMAIN.</p>
 
-Fire up your browser and visit http://yourowndomain.com/, and you should
+Fire up your browser and visit http://$DOMAIN/, and you should
 see the page you created.
 
 The fact that we named the apache configuration file (in
 ``/etc/apache2/sites-available``) ``yourowndomain.com`` is irrelevant;
 any name would have worked the same, but it's a convention to name it
-with the domain name. In fact, we needn't even have created a separate
-file.  The only configuration file apache needs is
+with the domain name. In fact, strictly speaking, we needn't even have
+created a separate file.  The only configuration file apache needs is
 ``/etc/apache2/apache2.conf``. If you open that file, you will see that
 it contains, among others, the following line::
 
@@ -311,20 +319,20 @@ So what it does is read all ``.conf`` files in that directory and
 process them as if their contents had been inserted in that point of
 ``/etc/apache2/apache2.conf``.
 
-As we noticed, if you visit http://yourowndomain.com/, you see the page
-you created. If, however, you visit http://[server_ip_address]/, you
+As we noticed, if you visit http://$DOMAIN/, you see the page
+you created. If, however, you visit http://$SERVER_IP_ADDRESS/, you
 should see apache's welcome page.  If the host name (the part between
-"http://" and the next slash) is yourowndomain.com or
-www.yourowndomain.com, then apache uses the configuration we specified
+"http://" and the next slash) is $DOMAIN or
+www.$DOMAIN, then apache uses the configuration we specified
 above, because of the ``ServerName`` and ``ServerAlias`` configuration
-directives which contain these two domain names. If we use another
+directives which contain these two names. If we use another
 domain name, or the server's ip address, there is no matching
 ``VirtualHost`` block in the apache configuration, so apache uses its
 default configuration. That default configuration is in
 ``/etc/apache2/sites-enabled/000-default.conf``. What makes it the
 default is that it is listed first; the ``IncludeOptional`` in
 ``/etc/apache2/apache2.conf`` reads files in alphabetical order, and
-``000-default`` has the ``000`` prefix to ensure it is first.
+``000-default.conf`` has the ``000`` prefix to ensure it is first.
 
 If someone arrives at my server through the wrong domain name, I don't
 want them to see a page that says "It works!", so I change the default
@@ -341,16 +349,16 @@ configuration to the following, which merely responds with "Not found":
 Configuring apache for django
 -----------------------------
 
-Change ``/etc/apache2/sites-available/yourowndomain.com.conf`` to the
+Change ``/etc/apache2/sites-available/$DOMAIN.conf`` to the
 following (which only differs from the one we just created in that it
 has the ``Location`` block):
 
 .. code-block:: apache
 
    <VirtualHost *:80>
-       ServerName yourowndomain.com
-       ServerAlias www.yourowndomain.com
-       DocumentRoot /var/www/yourowndomain.com
+       ServerName $DOMAIN
+       ServerAlias www.$DOMAIN
+       DocumentRoot /var/www/$DOMAIN
        <Location />
          ProxyPass http://localhost:8000
        </Location>
@@ -378,14 +386,14 @@ enough:
 
 .. code-block:: bash
 
-   PYTHONPATH=/etc/your_django_project:/usr/local/your_django_project \
+   PYTHONPATH=/etc/$DJANGO_PROJECT:/usr/local/$DJANGO_PROJECT \
        DJANGO_SETTINGS_MODULE=settings \
-       su your_django_project -c \
-       "/usr/local/your_django_project-virtualenv/bin/python \
-       /usr/local/your_django_project/manage.py runserver 8000"
+       su $DJANGO_USER -c \
+       "/usr/local/$DJANGO_PROJECT-virtualenv/bin/python \
+       /usr/local/$DJANGO_PROJECT/manage.py runserver 8000"
     
-Now go to http://yourowndomain.com/ and you should see your Django
-project in action.
+Now go to http://$DOMAIN/ and you should see your Django project in
+action.
 
 Apache receives your HTTP request. Because of the ``ProxyPass``
 directive, it decides to just pass on this request to another server,

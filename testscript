@@ -8,77 +8,163 @@
 
 set -e
 
+source /root/django_deployment_vars
+
+DJANGO_USER=$DJANGO_PROJECT
+DJANGO_GROUP=$DJANGO_PROJECT
+if [ $PYTHON = "3" ]; then
+	PYTHON_EXECUTABLE=/usr/bin/python3
+else
+	PYTHON_EXECUTABLE=/usr/bin/python
+fi
+
 # Update and install stuff (TODO: put it in the book)
 apt-get update
 apt-get -y upgrade
 apt-get install -y git python3 virtualenvwrapper
 
-# Users and directories
-if ! getent passwd your_django_project; then
-    adduser --system --home=/var/local/lib/your_django_project \
-        --no-create-home --disabled-password --group \
-        your_django_project
+#
+# USERS AND DIRECTORIES
+#
+
+
+# Creating a user and group
+if ! getent passwd $DJANGO_PROJECT; then
+	adduser --system --home=/var/local/lib/$DJANGO_PROJECT \
+	    --no-create-home --disabled-password --group \
+	    --shell=/bin/bash $DJANGO_USER
 fi
+
+# The program files
 cd /usr/local
-[ -d your_django_project/.git ] \
-    || git clone http://github.com/aptiko/your_django_project.git
-virtualenv --system-site-packages --python=/usr/bin/python3 \
-    /usr/local/your_django_project-virtualenv
-/usr/local/your_django_project-virtualenv/bin/pip install \
-    -r /usr/local/your_django_project/requirements.txt
-/usr/local/your_django_project-virtualenv/bin/python -m compileall \
-    /usr/local/your_django_project
-mkdir -p /etc/your_django_project
-cat <<EOF1 >/etc/your_django_project/settings.py
-from your_django_project.settings.base import *
+[ -d $DJANGO_PROJECT/.git ] \
+	|| git clone $DJANGO_PROJECT_REPOSITORY
+virtualenv --system-site-packages --python=$PYTHON_EXECUTABLE \
+	/usr/local/$DJANGO_PROJECT-virtualenv
+/usr/local/$DJANGO_PROJECT-virtualenv/bin/pip install \
+	-r /usr/local/$DJANGO_PROJECT/requirements.txt
+/usr/local/$DJANGO_PROJECT-virtualenv/bin/python -m compileall \
+	/usr/local/$DJANGO_PROJECT
 
-DEBUG = True
+# The data directory
+mkdir -p /var/local/lib/$DJANGO_PROJECT
+chown $DJANGO_USER /var/local/lib/$DJANGO_PROJECT
 
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': '/var/local/lib/your_django_project/your_django_project.db',
-    }
-}
-EOF1
-chgrp your_django_project /etc/your_django_project/settings.py
-chmod u=rw,g=r,o= /etc/your_django_project/settings.py
-/usr/local/your_django_project-virtualenv/bin/python -m compileall \
-    /etc/your_django_project
-chgrp -R your_django_project /etc/your_django_project/__pycache__
+# The production settings
+mkdir -p /etc/$DJANGO_PROJECT
+cat <<-EOF1 >/etc/$DJANGO_PROJECT/settings.py
+	from $DJANGO_PROJECT.settings.base import *
 
-# The web server (apache version)
-apt-get install -y apache2
-cat <<EOF1 >/etc/apache2/sites-available/yourowndomain.com.conf
-<VirtualHost *:80>
-    ServerName yourowndomain.com
-    ServerAlias www.yourowndomain.com
-    DocumentRoot /var/www/yourowndomain.com
-</VirtualHost>
+	DEBUG = True
+
+	DATABASES = {
+	    'default': {
+	        'ENGINE': 'django.db.backends.sqlite3',
+	        'NAME': '/var/local/lib/$DJANGO_PROJECT/$DJANGO_PROJECT.db',
+	    }
+	}
 EOF1
-cd /etc/apache2/sites-enabled
-[ -e yourowndomain.com.conf ] \
-    || ln -s ../sites-available/yourowndomain.com.conf .
-service apache2 reload
-mkdir -p /var/www/yourowndomain.com
-echo '<p>This is the web site for yourowndomain.com.</p>' \
-    >/var/www/yourowndomain.com/index.html
-cat <<EOF1 >/etc/apache2/sites-available/000-default.conf
-<VirtualHost *:80>
-    DocumentRoot /var/www/html
-    Redirect 404 /
-</VirtualHost>
-EOF1
-service apache2 reload
-cat <<EOF1 >/etc/apache2/sites-available/yourowndomain.com.conf
-<VirtualHost *:80>
-   ServerName yourowndomain.com
-   ServerAlias www.yourowndomain.com
-   DocumentRoot /var/www/yourowndomain.com
-   <Location />
-     ProxyPass http://localhost:8000
-   </Location>
-</VirtualHost>
-EOF1
-a2enmod proxy proxy_http
-service apache2 reload
+chgrp $DJANGO_GROUP /etc/$DJANGO_PROJECT/settings.py
+chmod u=rw,g=r,o= /etc/$DJANGO_PROJECT/settings.py
+/usr/local/$DJANGO_PROJECT-virtualenv/bin/python -m compileall \
+	/etc/$DJANGO_PROJECT
+if [ $PYTHON = "2" ]; then
+	chgrp -R $DJANGO_GROUP /etc/$DJANGO_PROJECT/settings.pyc
+else
+	chgrp -R $DJANGO_GROUP /etc/$DJANGO_PROJECT/__pycache__
+fi
+
+#
+# THE WEB SERVER
+#
+
+if [ $WEB_SERVER = 'nginx' ]; then
+	# Installing nginx
+	apt-get install nginx-light
+
+	# Configuring nginx to serve the domain
+	cat <<-EOF1 >/etc/nginx/sites-available/$DOMAIN
+		server {
+		    listen 80;
+		    listen [::]:80;
+		    server_name $DOMAIN www.$DOMAIN;
+		    root /var/www/$DOMAIN;
+		}
+	EOF1
+	cd /etc/nginx/sites-enabled
+	ln -s ../sites-available/$DOMAIN .
+	service nginx reload
+	mkdir -p /var/www/$DOMAIN
+	echo "<p>This is the web site for $DOMAIN.</p>" \
+		>/var/www/$DOMAIN/index.html
+	cat <<-EOF1 >/etc/nginx/sites-available/default
+		server {
+		    listen 80 default_server;
+		    listen [::]:80 default_server;
+		    return 404;
+		}
+	EOF1
+	service nginx reload
+
+	# Configuring nginx for django
+	cat <<-EOF1 >/etc/nginx/sites-available/$DOMAIN
+		server {
+		    listen 80;
+		    listen [::]:80;
+		    server_name $DOMAIN www.$DOMAIN;
+		    root /var/www/$DOMAIN;
+		    location / {
+		        proxy_pass http://localhost:8000;
+		        proxy_set_header Host $http_host;
+		        proxy_redirect off;
+		        proxy_set_header X-Real-IP $remote_addr;
+		        proxy_set_header X-Scheme $scheme;
+		        proxy_connect_timeout 10;
+		        proxy_read_timeout 30;
+		        client_max_body_size 20m;
+		    }
+		}
+	EOF1
+	service nginx reload
+else
+	# Installing apache
+	apt-get install -y apache2
+
+	# Configuring apache to serve the domain
+	cat <<-EOF1 >/etc/apache2/sites-available/$DOMAIN.conf
+		<VirtualHost *:80>
+		    ServerName $DOMAIN
+		    ServerAlias www.$DOMAIN
+		    DocumentRoot /var/www/$DOMAIN
+		</VirtualHost>
+	EOF1
+	cd /etc/apache2/sites-enabled
+	[ -e $DOMAIN.conf ] \
+		|| ln -s ../sites-available/$DOMAIN.conf .
+	service apache2 reload
+	mkdir -p /var/www/$DOMAIN
+    
+	echo '<p>This is the web site for $DOMAIN.</p>' \
+	    >/var/www/$DOMAIN/index.html
+	cat <<-EOF1 >/etc/apache2/sites-available/000-default.conf
+		<VirtualHost *:80>
+		    DocumentRoot /var/www/html
+		    Redirect 404 /
+		</VirtualHost>
+	EOF1
+	service apache2 reload
+
+	# Configuring apache for django
+	cat <<-EOF1 >/etc/apache2/sites-available/$DOMAIN.conf
+		<VirtualHost *:80>
+		    ServerName $DOMAIN
+		    ServerAlias www.$DOMAIN
+		    DocumentRoot /var/www/$DOMAIN
+		    <Location />
+		      ProxyPass http://localhost:8000
+		    </Location>
+		</VirtualHost>
+	EOF1
+	a2enmod proxy proxy_http
+	service apache2 reload
+fi
