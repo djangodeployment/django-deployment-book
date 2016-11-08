@@ -2,4 +2,4 @@ DOMAIN=example.com
 DJANGO_PROJECT=django_deployment_test
 DJANGO_PROJECT_REPOSITORY=http://github.com/djangodeployment/django_deployment_test.git
 PYTHON=3
-WEB_SERVER=apache
+WEB_SERVER=nginx

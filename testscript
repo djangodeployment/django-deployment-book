@@ -39,7 +39,8 @@ fi
 cd /usr/local
 [ -d $DJANGO_PROJECT/.git ] \
 	|| git clone $DJANGO_PROJECT_REPOSITORY
-virtualenv --system-site-packages --python=$PYTHON_EXECUTABLE \
+[ -d $DJANGO_PROJECT-virtualenv ] \
+	|| virtualenv --system-site-packages --python=$PYTHON_EXECUTABLE \
 	/usr/local/$DJANGO_PROJECT-virtualenv
 /usr/local/$DJANGO_PROJECT-virtualenv/bin/pip install \
 	-r /usr/local/$DJANGO_PROJECT/requirements.txt
@@ -80,7 +81,7 @@ fi
 
 if [ $WEB_SERVER = 'nginx' ]; then
 	# Installing nginx
-	apt-get install nginx-light
+	apt-get install -y nginx-light
 
 	# Configuring nginx to serve the domain
 	cat <<-EOF1 >/etc/nginx/sites-available/$DOMAIN
@@ -92,7 +93,8 @@ if [ $WEB_SERVER = 'nginx' ]; then
 		}
 	EOF1
 	cd /etc/nginx/sites-enabled
-	ln -s ../sites-available/$DOMAIN .
+	[ -e $DOMAIN ] \
+		|| ln -s ../sites-available/$DOMAIN .
 	service nginx reload
 	mkdir -p /var/www/$DOMAIN
 	echo "<p>This is the web site for $DOMAIN.</p>" \
@@ -115,10 +117,10 @@ if [ $WEB_SERVER = 'nginx' ]; then
 		    root /var/www/$DOMAIN;
 		    location / {
 		        proxy_pass http://localhost:8000;
-		        proxy_set_header Host $http_host;
+		        proxy_set_header Host \$http_host;
 		        proxy_redirect off;
-		        proxy_set_header X-Real-IP $remote_addr;
-		        proxy_set_header X-Scheme $scheme;
+		        proxy_set_header X-Forwarded-For \$remote_addr;
+		        proxy_set_header X-Forwarded-Proto \$scheme;
 		        proxy_connect_timeout 10;
 		        proxy_read_timeout 30;
 		        client_max_body_size 20m;
@@ -161,10 +163,86 @@ else
 		    ServerAlias www.$DOMAIN
 		    DocumentRoot /var/www/$DOMAIN
 		    <Location />
-		      ProxyPass http://localhost:8000
+		        ProxyPass http://localhost:8000
+		        ProxyPreserveHost On
+		        RequestHeader set X-Forwarded-Proto "http"
 		    </Location>
 		</VirtualHost>
 	EOF1
-	a2enmod proxy proxy_http
+	a2enmod proxy proxy_http headers
+	service apache2 reload
+fi
+
+#
+# STATIC AND MEDIA FILES
+#
+
+# Setting up Django
+cat <<-EOF1 >/etc/$DJANGO_PROJECT/settings.py
+	from $DJANGO_PROJECT.settings.base import *
+
+	DEBUG = True
+
+	DATABASES = {
+	    'default': {
+	        'ENGINE': 'django.db.backends.sqlite3',
+	        'NAME': '/var/local/lib/$DJANGO_PROJECT/$DJANGO_PROJECT.db',
+	    }
+	}
+	STATIC_ROOT = '/var/cache/$DJANGO_PROJECT/static/'
+	STATIC_URL = '/static/'
+EOF1
+/usr/local/$DJANGO_PROJECT-virtualenv/bin/python -m compileall \
+	/etc/$DJANGO_PROJECT
+mkdir -p /var/cache/$DJANGO_PROJECT/static
+PYTHONPATH=/etc/$DJANGO_PROJECT:/usr/local/$DJANGO_PROJECT \
+	DJANGO_SETTINGS_MODULE=settings \
+	/usr/local/$DJANGO_PROJECT-virtualenv/bin/python \
+	/usr/local/$DJANGO_PROJECT/manage.py collectstatic --noinput
+
+if [ $WEB_SERVER = 'nginx' ]; then
+	# Setting up nginx
+	cat <<-EOF1 >/etc/nginx/sites-available/$DOMAIN
+		server {
+		    listen 80;
+		    listen [::]:80;
+		    server_name $DOMAIN www.$DOMAIN;
+		    root /var/www/$DOMAIN;
+		    location / {
+		        proxy_pass http://localhost:8000;
+		        proxy_set_header Host \$http_host;
+		        proxy_redirect off;
+		        proxy_set_header X-Forwarded-For \$remote_addr;
+		        proxy_set_header X-Forwarded-Proto \$scheme;
+		        client_max_body_size 20m;
+		    }
+		    location /static/ {
+		        root /var/cache/$DJANGO_PROJECT;
+		    }
+		}
+	EOF1
+	service nginx reload
+else
+	# Setting up apache
+	cat <<-EOF1 >/etc/apache2/sites-available/$DOMAIN.conf``
+		<VirtualHost *:80>
+		    ServerName $DOMAIN
+		    ServerAlias www.$DOMAIN
+		    DocumentRoot /var/www/$DOMAIN
+		    <Location />
+		        ProxyPass http://localhost:8000
+		        ProxyPreserveHost On
+		        RequestHeader set X-Forwarded-Proto "http"
+		    </Location>
+		    <Location /static/>
+		        ProxyPass !
+		    </Location>
+		    Alias /static/ /var/cache/$DJANGO_PROJECT/static/
+		    <Directory /var/cache/$DJANGO_PROJECT/static/>
+		        Options -Indexes
+		        Require all granted
+		    </Directory>
+		</VirtualHost>
+	EOF1
 	service apache2 reload
 fi
