@@ -15,7 +15,7 @@ Before continuing, please make sure you have the necessary background:
    ssh, use scp to copy files, and use some basic commands, including
    ``sudo`` and ``apt-get update/upgrade/install/remove``.
  * You can use **DNS** to point your domain name to your server.
- * You have chosen between **apache** and **nginx**.
+ * You have chosen between **Apache** and **nginx**.
 
 With the exception of being able to develop with Django, you can get an
 introduction to the rest at the Appendix.
@@ -67,8 +67,9 @@ do so, better do it as a normal user, exactly as if you were going to do
 development; but if you only have a root user on the virtual server, no
 worry, use the root user, and do your job in the file:`/root` directory.
 
-Now, make sure ``DEBUG=True``, and instead of running the development
-server with ``./manage.py runserver`` run it as follows::
+Now, make sure ``DEBUG=True``, and that you have your $DOMAIN in
+``ALLOWED_HOSTS``, and instead of running the development server with
+``./manage.py runserver`` run it as follows::
 
     ./manage.py runserver 0.0.0.0:8000
 
@@ -112,7 +113,7 @@ becoming root::
     ./manage.py runserver 0.0.0.0:80
 
 If this tells you that the port is already in use, it probably means
-that a web server such as apache or nginx is already running on the
+that a web server such as Apache or nginx is already running on the
 machine. Shut it down::
 
     service apache2 stop

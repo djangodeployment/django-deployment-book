@@ -1,10 +1,10 @@
 The web server
 ==============
 
-This chapter is divided in two parts: nginx and apache. Depending on
+This chapter is divided in two parts: nginx and Apache. Depending on
 which of the two you choose, you only need to read that part.
 
-Both nginx and apache are excellent choices for a web server. Most
+Both nginx and Apache are excellent choices for a web server. Most
 people deploying Django nowadays seem to be using nginx, so, if you
 aren't interested in learning more about what you should choose, pick up
 nginx.  Apache is also widely used, and it is preferable in some cases.
@@ -178,10 +178,9 @@ Here is what these configuration directives do:
 **proxy_set_header Host $http_host**
    By default, the header of the request nginx makes to the backend
    includes ``Host: localhost`` (if you don't understand the ``Host``
-   header, read "How apache/nginx virtual hosts work" in the Appendix).
-   We prefer to pass the real ``Host`` to Django (i.e. the one received
-   by nginx). When, later, we set ``DEBUG=False``, Django will need to
-   know the ``Host`` in order to check if it's in ``ALLOWED_HOSTS``.
+   header, read "How Apache/nginx virtual hosts work" in the Appendix).
+   We need to pass the real ``Host`` to Django (i.e. the one received
+   by nginx), otherwise Django cannot check if it's in `ALLOWED_HOSTS``.
 **proxy_redirect off**
    This tells nginx that, if the backend returns an HTTP redirect, it
    should leave it as is. (By default, nginx assumes the backend is
@@ -228,17 +227,17 @@ This concludes the part of the chapter about nginx. If you chose nginx
 as your web server, you probably want to skip the next sections and go
 to the Chapter summary.
 
-Installing apache
+Installing Apache
 -----------------
 
-Install apache like this::
+Install Apache like this::
 
     apt-get install apache2
 
 After you install, go to your web browser and visit
-http://$DOMAIN/. You should see apache's welcome page.
+http://$DOMAIN/. You should see Apache's welcome page.
 
-Configuring apache to serve the domain
+Configuring Apache to serve the domain
 --------------------------------------
 
 Create file ``/etc/apache2/sites-available/$DOMAIN.conf`` with
@@ -256,7 +255,7 @@ Create a symbolic link in ``sites-enabled``:
 
 .. note::
 
-   Again, this is not a valid apache configuration file until you replace
+   Again, this is not a valid Apache configuration file until you replace
    ``$DOMAIN`` with your actual domain name, such as "example.com".
 
 .. code-block:: bash
@@ -277,7 +276,7 @@ Create a symbolic link in ``sites-enabled``:
 
       a2ensite $DOMAIN
 
-Tell apache to re-read its configuration:
+Tell Apache to re-read its configuration:
 
 .. code-block:: bash
 
@@ -294,11 +293,11 @@ contents:
 Fire up your browser and visit http://$DOMAIN/, and you should
 see the page you created.
 
-The fact that we named the apache configuration file (in
+The fact that we named the Apache configuration file (in
 ``/etc/apache2/sites-available``) ``yourowndomain.com`` is irrelevant;
 any name would have worked the same, but it's a convention to name it
 with the domain name. In fact, strictly speaking, we needn't even have
-created a separate file.  The only configuration file apache needs is
+created a separate file.  The only configuration file Apache needs is
 ``/etc/apache2/apache2.conf``. If you open that file, you will see that
 it contains, among others, the following line::
 
@@ -310,13 +309,13 @@ process them as if their contents had been inserted in that point of
 
 As we noticed, if you visit http://$DOMAIN/, you see the page
 you created. If, however, you visit http://$SERVER_IP_ADDRESS/, you
-should see apache's welcome page.  If the host name (the part between
+should see Apache's welcome page.  If the host name (the part between
 "http://" and the next slash) is $DOMAIN or
-www.$DOMAIN, then apache uses the configuration we specified
+www.$DOMAIN, then Apache uses the configuration we specified
 above, because of the ``ServerName`` and ``ServerAlias`` configuration
 directives which contain these two names. If we use another
 domain name, or the server's ip address, there is no matching
-``VirtualHost`` block in the apache configuration, so apache uses its
+``VirtualHost`` block in the Apache configuration, so apache uses its
 default configuration. That default configuration is in
 ``/etc/apache2/sites-enabled/000-default.conf``. What makes it the
 default is that it is listed first; the ``IncludeOptional`` in
@@ -335,12 +334,12 @@ configuration to the following, which merely responds with "Not found":
     </VirtualHost>
 
 
-Configuring apache for django
+Configuring Apache for django
 -----------------------------
 
 Change ``/etc/apache2/sites-available/$DOMAIN.conf`` to the
 following (which only differs from the one we just created in that it
-has the ``Location`` block):
+has the ``ProxyPass`` directive):
 
 .. code-block:: apache
 
@@ -348,9 +347,7 @@ has the ``Location`` block):
        ServerName $DOMAIN
        ServerAlias www.$DOMAIN
        DocumentRoot /var/www/$DOMAIN
-       <Location />
-         ProxyPass http://localhost:8000
-       </Location>
+       ProxyPass / http://localhost:8000/
    </VirtualHost>
 
 In order for this to work, we actually first need to enable Apache
@@ -366,7 +363,7 @@ to also enable ``headers``, because we will need it soon after:
 links that point from ``/etc/apache2/mods-enabled`` to
 ``/etc/apache2/mods-available``.)
 
-Tell apache to reload its configuration::
+Tell Apache to reload its configuration::
 
     service apache2 reload
 
@@ -390,25 +387,27 @@ directive, it decides to just pass on this request to another server,
 which in our case is localhost:8000.
 
 Now this may work for now, but we will add some more configuration which
-we will be necessary later. The ``Location`` block actually becomes:
+we will be necessary later:
 
 .. code-block:: apache
 
-   <Location />
-       ProxyPass http://localhost:8000
+   <VirtualHost *:80>
+       ServerName $DOMAIN
+       ServerAlias www.$DOMAIN
+       DocumentRoot /var/www/$DOMAIN
+       ProxyPass / http://localhost:8000/
        ProxyPreserveHost On
        RequestHeader set X-Forwarded-Proto "http"
-   </Location>
+   </VirtualHost>
 
 Here is what these configuration directives do:
 
 **ProxyPreserveHost On**
-   By default, the header of the request apache makes to the backend
+   By default, the header of the request Apache makes to the backend
    includes ``Host: localhost`` (if you don't understand the ``Host``
-   header, read "How apache/nginx virtual hosts work" in the Appendix).
-   We prefer to pass the real ``Host`` to Django (i.e. the one received
-   by apache).  When, later, we set ``DEBUG=False``, Django will need to
-   know the ``Host`` in order to check if it's in ``ALLOWED_HOSTS``.
+   header, read "How Apache/nginx virtual hosts work" in the Appendix).
+   We need to pass the real ``Host`` to Django (i.e. the one received
+   by Apache), otherwise Django cannot check if it's in `ALLOWED_HOSTS``.
 **RequestHeader set X-Forwarded-Proto "http"**
    Another thing that Django does not know is whether the request has
    been made through HTTPS or plain HTTP; Apache knows that, but the
@@ -434,7 +433,7 @@ Chapter summary
   site.
 * Put the configuration file in ``sites-available`` and symlink it from
   ``sites-enabled`` (don't forget to reload the web server).
-* Use the ``proxy_pass`` (nginx) or ``ProxyPass`` (apache) directive to
+* Use the ``proxy_pass`` (nginx) or ``ProxyPass`` (Apache) directive to
   pass the HTTP request to Django.
 * Configure the web server to pass HTTP request headers ``Host``,
   ``X-Forwarded-For``, and ``X-Forwarded-Proto`` (Apache by default

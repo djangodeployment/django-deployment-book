@@ -57,7 +57,7 @@ cat <<-EOF1 >/etc/$DJANGO_PROJECT/settings.py
 	from $DJANGO_PROJECT.settings.base import *
 
 	DEBUG = True
-
+	ALLOWED_HOSTS = ['$DOMAIN', 'www.$DOMAIN']
 	DATABASES = {
 	    'default': {
 	        'ENGINE': 'django.db.backends.sqlite3',
@@ -162,11 +162,9 @@ else
 		    ServerName $DOMAIN
 		    ServerAlias www.$DOMAIN
 		    DocumentRoot /var/www/$DOMAIN
-		    <Location />
-		        ProxyPass http://localhost:8000
-		        ProxyPreserveHost On
-		        RequestHeader set X-Forwarded-Proto "http"
-		    </Location>
+		    ProxyPass / http://localhost:8000/
+		    ProxyPreserveHost On
+		    RequestHeader set X-Forwarded-Proto "http"
 		</VirtualHost>
 	EOF1
 	a2enmod proxy proxy_http headers
@@ -182,7 +180,7 @@ cat <<-EOF1 >/etc/$DJANGO_PROJECT/settings.py
 	from $DJANGO_PROJECT.settings.base import *
 
 	DEBUG = True
-
+	ALLOWED_HOSTS = ['$DOMAIN', 'www.$DOMAIN']
 	DATABASES = {
 	    'default': {
 	        'ENGINE': 'django.db.backends.sqlite3',
@@ -194,6 +192,8 @@ cat <<-EOF1 >/etc/$DJANGO_PROJECT/settings.py
 EOF1
 /usr/local/$DJANGO_PROJECT-virtualenv/bin/python -m compileall \
 	/etc/$DJANGO_PROJECT
+chgrp -R $DJANGO_GROUP /etc/$DJANGO_PROJECT/__pycache__ \
+	/etc/$DJANGO_PROJECT/settings.pyc
 mkdir -p /var/cache/$DJANGO_PROJECT/static
 PYTHONPATH=/etc/$DJANGO_PROJECT:/usr/local/$DJANGO_PROJECT \
 	DJANGO_SETTINGS_MODULE=settings \
@@ -229,17 +229,12 @@ else
 		    ServerName $DOMAIN
 		    ServerAlias www.$DOMAIN
 		    DocumentRoot /var/www/$DOMAIN
-		    <Location />
-		        ProxyPass http://localhost:8000
-		        ProxyPreserveHost On
-		        RequestHeader set X-Forwarded-Proto "http"
-		    </Location>
-		    <Location /static/>
-		        ProxyPass !
-		    </Location>
+		    ProxyPass /static !
+		    ProxyPass / http://localhost:8000/
+		    ProxyPreserveHost On
+		    RequestHeader set X-Forwarded-Proto "http"
 		    Alias /static/ /var/cache/$DJANGO_PROJECT/static/
 		    <Directory /var/cache/$DJANGO_PROJECT/static/>
-		        Options -Indexes
 		        Require all granted
 		    </Directory>
 		</VirtualHost>

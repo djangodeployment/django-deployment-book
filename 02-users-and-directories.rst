@@ -165,7 +165,7 @@ file should be like this:
     from $DJANGO_PROJECT.settings.base import *
 
     DEBUG = True
-
+    ALLOWED_HOSTS = ['$DOMAIN', 'www.$DOMAIN']
     DATABASES = {
         'default': {
             'ENGINE': 'django.db.backends.sqlite3',
@@ -176,13 +176,13 @@ file should be like this:
 .. note::
 
    The above is not valid Python until you replace ``$DJANGO_PROJECT``
-   with the name of your django project. In all examples until now you
-   might have been able to copy and paste the code from the book and use
-   shell variables for ``$DJANGO_PROJECT``, ``$DJANGO_USER``,
-   ``$DJANGO_GROUP``, and so on. This is, indeed, the reason I chose
-   this notation. However, I am generally using it as a notation in the
-   book, so in some places, like in this Python, you have to actually
-   replace it yourself.
+   with the name of your django project and ``$DOMAIN`` with your
+   domain. In all examples until now you might have been able to copy
+   and paste the code from the book and use shell variables for
+   ``$DJANGO_PROJECT``, ``$DJANGO_USER``, ``$DJANGO_GROUP``, and so on.
+   This is, indeed, the reason I chose this notation. However, in some
+   places, like in this Python, you have to actually replace it
+   yourself.
 
 I have assumed that your project uses the convention of having, instead
 of a single ``settings.py`` file, a ``settings`` directory containing
