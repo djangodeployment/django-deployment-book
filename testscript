@@ -192,13 +192,16 @@ cat <<-EOF1 >/etc/$DJANGO_PROJECT/settings.py
 EOF1
 /usr/local/$DJANGO_PROJECT-virtualenv/bin/python -m compileall \
 	/etc/$DJANGO_PROJECT
-chgrp -R $DJANGO_GROUP /etc/$DJANGO_PROJECT/__pycache__ \
-	/etc/$DJANGO_PROJECT/settings.pyc
+if [ $PYTHON = "2" ]; then
+	chgrp -R $DJANGO_GROUP /etc/$DJANGO_PROJECT/settings.pyc
+else
+	chgrp -R $DJANGO_GROUP /etc/$DJANGO_PROJECT/__pycache__
+fi
 mkdir -p /var/cache/$DJANGO_PROJECT/static
 PYTHONPATH=/etc/$DJANGO_PROJECT:/usr/local/$DJANGO_PROJECT \
-	DJANGO_SETTINGS_MODULE=settings \
 	/usr/local/$DJANGO_PROJECT-virtualenv/bin/python \
-	/usr/local/$DJANGO_PROJECT/manage.py collectstatic --noinput
+	/usr/local/$DJANGO_PROJECT/manage.py \
+	collectstatic --settings=settings --noinput
 
 if [ $WEB_SERVER = 'nginx' ]; then
 	# Setting up nginx

@@ -147,10 +147,10 @@ enough:
 .. code-block:: bash
 
    PYTHONPATH=/etc/$DJANGO_PROJECT:/usr/local/$DJANGO_PROJECT \
-       DJANGO_SETTINGS_MODULE=settings \
        su $DJANGO_USER -c \
        "/usr/local/$DJANGO_PROJECT-virtualenv/bin/python \
-       /usr/local/$DJANGO_PROJECT/manage.py runserver 8000"
+       /usr/local/$DJANGO_PROJECT/manage.py \
+       runserver --settings=settings 8000"
 
 Now go to http://$DOMAIN/ and you should see your Django
 project in action.
@@ -374,11 +374,11 @@ enough:
 .. code-block:: bash
 
    PYTHONPATH=/etc/$DJANGO_PROJECT:/usr/local/$DJANGO_PROJECT \
-       DJANGO_SETTINGS_MODULE=settings \
        su $DJANGO_USER -c \
        "/usr/local/$DJANGO_PROJECT-virtualenv/bin/python \
-       /usr/local/$DJANGO_PROJECT/manage.py runserver 8000"
-    
+       /usr/local/$DJANGO_PROJECT/manage.py \
+       runserver --settings=settings 8000"
+
 Now go to http://$DOMAIN/ and you should see your Django project in
 action.
 

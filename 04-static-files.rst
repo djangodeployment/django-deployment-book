@@ -36,9 +36,9 @@ parents.
 .. code-block:: bash
 
    PYTHONPATH=/etc/$DJANGO_PROJECT:/usr/local/$DJANGO_PROJECT \
-       DJANGO_SETTINGS_MODULE=settings \
        /usr/local/$DJANGO_PROJECT-virtualenv/bin/python \
-       /usr/local/$DJANGO_PROJECT/manage.py collectstatic
+       /usr/local/$DJANGO_PROJECT/manage.py collectstatic \
+       --settings=settings
 
 This will copy all static files to the directory we specified in
 `STATIC_ROOT`. Don't worry if you don't understand it clearly, we will

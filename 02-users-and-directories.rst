@@ -31,7 +31,7 @@ Here is why we use these parameters:
     whereas normal users are people. Because of this parameter,
     ``adduser`` will assign a user id less than 1000, which is only a
     convention for knowing that this is a system user. Otherwise there
-    isn't much difference. 
+    isn't much difference.
 
 **--home=/var/local/lib/$DJANGO_PROJECT**
     This specifies the home directory for the user. For system users, it
@@ -371,6 +371,22 @@ Do you understand that very clearly? If not, here are some tips:
    We prefer, however, to set the ``PYTHONPATH`` and not change
    directory; this way our setup will be clearer and more robust.
 
+Instead of using ``DJANGO_SETTINGS_MODULE``, you can also use the
+``--settings`` parameter of ``manage.py``:
+
+.. code-block:: bash
+
+   PYTHONPATH=/etc/$DJANGO_PROJECT:/usr/local/$DJANGO_PROJECT \
+       su $DJANGO_USER -c \
+       "/usr/local/$DJANGO_PROJECT-virtualenv/bin/python \
+       /usr/local/$DJANGO_PROJECT/manage.py
+       runserver --settings=settings 0.0.0.0:8000"
+
+(``manage.py`` also supports a ``--pythonpath`` parameter which could be
+used instead of ``PYTHONPATH``, however it seems that ``--settings``
+doesn't work correctly together with ``--pythonpath``, at least not in
+Django 1.8.)
+
 If you fire up your browser and visit http://$DOMAIN:8000/,
 you should see your Django project in action. Still wrong of course; we
 are still using the Django development server, but we have accomplished
@@ -398,7 +414,8 @@ Chapter summary
    ``/etc/$DJANGO_PROJECT``. Change the group of the compiled
    configuration files to the system group you created and verify it's
    not readable by other users.
- * Run ``manage.py`` as the system user you created, after specifying
-   the environment variables
-   ``PYTHONPATH=/etc/$DJANGO_PROJECT:/usr/local/$DJANGO_PROJECT`` and
-   ``DJANGO_SETTINGS_MODULE=settings``.
+ * Run ``manage.py`` as the system user you created, after setting
+   the environment variable
+   ``PYTHONPATH=/etc/$DJANGO_PROJECT:/usr/local/$DJANGO_PROJECT``, and
+   specifying ``--settings=settings`` or setting the environment
+   variable ``DJANGO_SETTINGS_MODULE=settings``.
