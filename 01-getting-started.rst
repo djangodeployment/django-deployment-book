@@ -41,7 +41,9 @@ and reinstalling it to try things differently as we move on. You must
 have mastered setting up a development server from scratch. You should
 be able to setup your Django project on a newly installed machine within
 a couple of minutes at most, with a sequence of commands similar to the
-following::
+following:
+
+.. code-block:: bash
 
    apt-get install git python3 virtualenvwrapper
    git clone $DJANGO_PROJECT_REPOSITORY
@@ -69,7 +71,9 @@ worry, use the root user, and do your job in the file:`/root` directory.
 
 Now, make sure ``DEBUG=True``, and that you have your $DOMAIN in
 ``ALLOWED_HOSTS``, and instead of running the development server with
-``./manage.py runserver`` run it as follows::
+``./manage.py runserver`` run it as follows:
+
+.. code-block:: bash
 
     ./manage.py runserver 0.0.0.0:8000
 
@@ -86,7 +90,9 @@ able to access the Django development server at
 "http://localhost:8000/", but remote connections, from another machine,
 won't work. We use "0.0.0.0:8000" instead, which asks the Django
 development server to listen for network connections. Even better, if
-your virtual server has IPv6 enabled, you can use this::
+your virtual server has IPv6 enabled, you can use this:
+
+.. code-block:: bash
 
     ./manage.py runserver [::]:8000
 
@@ -97,7 +103,9 @@ Next problem is that you can't possibly ask your users to use
 http://$DOMAIN:8000/, you have to get rid of the ":8000"
 part. "http://$DOMAIN/" is actually a synonym for
 "http://$DOMAIN:80/", so we need to tell Django to listen
-on port 80 instead of 8000. This may or may not work::
+on port 80 instead of 8000. This may or may not work:
+
+.. code-block:: bash
 
     ./manage.py runserver 0.0.0.0:80
 
@@ -105,16 +113,20 @@ Port 80 is privileged. This means that normal users aren't allowed to
 listen for connections on port 80; only the root user is. So if you run
 the above command as as a normal user, Django will probably tell you
 that you don't have permission to access that port.  Fix that problem by
-becoming root::
+becoming root:
+
+.. code-block:: bash
 
     sudo -s
     cd $DJANGO_PROJECT_DIRECTORY
-    [activate your virtualenv]
+    # [activate your virtualenv]
     ./manage.py runserver 0.0.0.0:80
 
 If this tells you that the port is already in use, it probably means
 that a web server such as Apache or nginx is already running on the
-machine. Shut it down::
+machine. Shut it down:
+
+.. code-block:: bash
 
     service apache2 stop
     service nginx stop
