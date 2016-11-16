@@ -219,7 +219,7 @@ if [ $WEB_SERVER = 'nginx' ]; then
 		        client_max_body_size 20m;
 		    }
 		    location /static/ {
-		        root /var/cache/$DJANGO_PROJECT;
+		        alias /var/cache/$DJANGO_PROJECT/static/;
 		    }
 		}
 	EOF1

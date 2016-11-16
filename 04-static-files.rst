@@ -67,7 +67,7 @@ which only differs from the previous version in that the new ``location
             client_max_body_size 20m;
         }
         location /static/ {
-            root /var/cache/$DJANGO_PROJECT;
+            alias /var/cache/$DJANGO_PROJECT/static/;
         }
     }
 
@@ -182,7 +182,7 @@ For nginx, add the following to ``/etc/nginx/sites-available/$DOMAIN``:
 .. code-block:: nginx
 
    location /media/ {
-       root /var/opt/$DJANGO_PROJECT;
+       alias /var/opt/$DJANGO_PROJECT/media/;
    }
 
 For Apache, add the following before ``ProxyPass /``:
@@ -275,8 +275,8 @@ Chapter summary
  * Set ``MEDIA_ROOT`` to ``/var/opt/$DJANGO_PROJECT/media/``.
  * Set ``MEDIA_URL`` to ``/media/``.
  * Run ``collectstatic``.
- * In nginx, set ``location /static/ { root /var/cache/$DJANGO_PROJECT;
-   }``; likewise for media files.
+ * In nginx, set ``location /static/ { alias
+   /var/cache/$DJANGO_PROJECT/static/; }``; likewise for media files.
  * In Apache, add ``ProxyPass /static/ !`` before ``ProxyPass /``, and
    add
 
