@@ -8,7 +8,7 @@ Setting up Django
 -----------------
 
 **First**, add these statements to
-``/etc/$DJANGO_PROJECT/settings.py``::
+``/etc/opt/$DJANGO_PROJECT/settings.py``::
 
    STATIC_ROOT = '/var/cache/$DJANGO_PROJECT/static/'
    STATIC_URL = '/static/'
@@ -17,10 +17,10 @@ Remember that after each change to your settings you need to recompile:
 
 .. code-block:: bash
 
-   /usr/local/$DJANGO_PROJECT-virtualenv/bin/python -m compileall \
-       /etc/$DJANGO_PROJECT
-    chgrp -R $DJANGO_GROUP /etc/$DJANGO_PROJECT/__pycache__ \
-       /etc/$DJANGO_PROJECT/settings.pyc
+   /opt/$DJANGO_PROJECT/venv/bin/python -m compileall \
+       /etc/opt/$DJANGO_PROJECT
+    chgrp -R $DJANGO_GROUP /etc/opt/$DJANGO_PROJECT/__pycache__ \
+       /etc/opt/$DJANGO_PROJECT/settings.pyc
 
 **Second**, create directory ``/var/cache/$DJANGO_PROJECT/static/``:
 
@@ -35,9 +35,9 @@ parents.
 
 .. code-block:: bash
 
-   PYTHONPATH=/etc/$DJANGO_PROJECT:/usr/local/$DJANGO_PROJECT \
-       /usr/local/$DJANGO_PROJECT-virtualenv/bin/python \
-       /usr/local/$DJANGO_PROJECT/manage.py collectstatic \
+   PYTHONPATH=/etc/opt/$DJANGO_PROJECT:/opt/$DJANGO_PROJECT \
+       /opt/$DJANGO_PROJECT/venv/bin/python \
+       /opt/$DJANGO_PROJECT/manage.py collectstatic \
        --settings=settings
 
 This will copy all static files to the directory we specified in
@@ -165,16 +165,16 @@ Media files
 -----------
 
 Media files are similar to static files, so let's go through them
-quickly. We will store them in ``/var/local/lib/$DJANGO_PROJECT/media``.
+quickly. We will store them in ``/var/opt/$DJANGO_PROJECT/media``.
 
 .. code-block:: bash
 
-   mkdir /var/local/lib/$DJANGO_PROJECT/media
-   chown $DJANGO_USER /var/local/lib/$DJANGO_PROJECT/media
+   mkdir /var/opt/$DJANGO_PROJECT/media
+   chown $DJANGO_USER /var/opt/$DJANGO_PROJECT/media
 
-Add the following to ``/etc/$DJANGO_PROJECT/settings.py``::
+Add the following to ``/etc/opt/$DJANGO_PROJECT/settings.py``::
 
-   MEDIA_ROOT = '/var/local/lib/$DJANGO_PROJECT/media/'
+   MEDIA_ROOT = '/var/opt/$DJANGO_PROJECT/media/'
    MEDIA_URL = '/media/'
 
 For nginx, add the following to ``/etc/nginx/sites-available/$DOMAIN``:
@@ -182,7 +182,7 @@ For nginx, add the following to ``/etc/nginx/sites-available/$DOMAIN``:
 .. code-block:: nginx
 
    location /media/ {
-       root /var/local/lib/$DJANGO_PROJECT;
+       root /var/opt/$DJANGO_PROJECT;
    }
 
 For Apache, add the following before ``ProxyPass /``:
@@ -195,8 +195,8 @@ and the following at the end of the ``VirtualHost`` block:
 
 .. code-block:: apache
 
-   Alias /media/ /var/local/lib/$DJANGO_PROJECT/media/
-   <Directory /var/local/lib/$DJANGO_PROJECT/media/>
+   Alias /media/ /var/opt/$DJANGO_PROJECT/media/
+   <Directory /var/opt/$DJANGO_PROJECT/media/>
        Require all granted
    </Directory>
 
@@ -204,7 +204,7 @@ Recompile your settings, change the group of the compiled file, reload
 the web server, and it's ready.
 
 One of the differences with static files is that we changed the
-ownership of ``/var/local/lib/$DJANGO_PROJECT/media`` to $DJANGO_USER.
+ownership of ``/var/opt/$DJANGO_PROJECT/media`` to $DJANGO_USER.
 The reason is that Django needs to be able to be writing there each time
 the user uploads a file, or each time the user asks to delete a file.
 
@@ -217,11 +217,11 @@ clearly what we've done. Let's take a break and discuss the file
 locations that I've chosen, which are the following:
 
 ============== =========================================
-Program files  /usr/local/lib/$DJANGO_PROJECT           
-Virtualenv     /usr/local/lib/$DJANGO_PROJECT-virtualenv
-Media files    /var/local/lib/$DJANGO_PROJECT/media     
+Program files  /opt/$DJANGO_PROJECT           
+Virtualenv     /opt/$DJANGO_PROJECT/venv
+Media files    /var/opt/$DJANGO_PROJECT/media     
 Static files   /var/cache/$DJANGO_PROJECT/static        
-Configuration  /etc/$DJANGO_PROJECT                     
+Configuration  /etc/opt/$DJANGO_PROJECT                     
 ============== =========================================
 
 There are a couple more that we haven't seen yet, but the above more or
@@ -233,15 +233,14 @@ repository root, like this:
 
 ============== ====================================
 Program files  /srv/$DJANGO_PROJECT           
-Virtualenv     /srv/$DJANGO_PROJECT/virtualenv
+Virtualenv     /srv/$DJANGO_PROJECT/venv
 Media files    /srv/$DJANGO_PROJECT/media     
 Static files   /srv/$DJANGO_PROJECT/static        
 Configuration  /srv/$DJANGO_PROJECT/$DJANGO_PROJECT
 ============== ====================================
 
 Since ``/srv/$DJANGO_PROJECT`` is the root of the repository working
-directory, they add ``virtualenv``, ``media`` and ``static`` to
-``.gitignore``.
+directory, they add ``media`` and ``static`` to ``.gitignore``.
 
 Although this setup seems simpler, I have preferred the other one for
 several reasons. The first one is purely educational. When you get too
@@ -257,13 +256,13 @@ different situations. We have assumed so far that your $DJANGO_PROJECT
 is a repository which you can clone or copy somewhere, but what if you
 turn your project into a reusable pip-installable application? In that
 case there will be no ``/srv/$DJANGO_PROJECT`` or
-``/usr/local/$DJANGO_PROJECT``. The tweak required with the split
+``/opt/$DJANGO_PROJECT``. The tweak required with the split
 directories scheme is minimal. Likewise if you package your application
 into a ``.deb`` package.
 
 Finally, separating the directories makes it easier to backup only what
 is needed. My backup script (which we will see in Chapter 8)
-automatically excludes ``/usr`` and ``/var/cache`` from the backup.
+automatically excludes ``/opt`` and ``/var/cache`` from the backup.
 Since the static files can be regenerated, there is no need to back them
 up.
 
@@ -273,7 +272,7 @@ Chapter summary
 
  * Set ``STATIC_ROOT`` to ``/var/cache/$DJANGO_PROJECT/static/``.
  * Set ``STATIC_URL`` to ``/static/``.
- * Set ``MEDIA_ROOT`` to ``/var/local/lib/$DJANGO_PROJECT/media/``.
+ * Set ``MEDIA_ROOT`` to ``/var/opt/$DJANGO_PROJECT/media/``.
  * Set ``MEDIA_URL`` to ``/media/``.
  * Run ``collectstatic``.
  * In nginx, set ``location /static/ { root /var/cache/$DJANGO_PROJECT;

@@ -30,30 +30,30 @@ apt-get install -y git python3 virtualenvwrapper
 
 # Creating a user and group
 if ! getent passwd $DJANGO_PROJECT; then
-	adduser --system --home=/var/local/lib/$DJANGO_PROJECT \
-	    --no-create-home --disabled-password --group \
-	    --shell=/bin/bash $DJANGO_USER
+	adduser --system --home=/opt/$DJANGO_PROJECT \
+		--no-create-home --disabled-password --group \
+		--shell=/bin/bash $DJANGO_USER
 fi
 
 # The program files
-cd /usr/local
+cd /opt
 [ -d $DJANGO_PROJECT/.git ] \
 	|| git clone $DJANGO_PROJECT_REPOSITORY
-[ -d $DJANGO_PROJECT-virtualenv ] \
-	|| virtualenv --system-site-packages --python=$PYTHON_EXECUTABLE \
-	/usr/local/$DJANGO_PROJECT-virtualenv
-/usr/local/$DJANGO_PROJECT-virtualenv/bin/pip install \
-	-r /usr/local/$DJANGO_PROJECT/requirements.txt
-/usr/local/$DJANGO_PROJECT-virtualenv/bin/python -m compileall \
-	/usr/local/$DJANGO_PROJECT
+[ -d $DJANGO_PROJECT/venv ] \
+	virtualenv --system-site-packages --python=$PYTHON_EXECUTABLE \
+		/opt/$DJANGO_PROJECT/venv
+/opt/$DJANGO_PROJECT/venv/bin/pip install \
+	-r /opt/$DJANGO_PROJECT/requirements.txt
+/opt/$DJANGO_PROJECT/venv/bin/python -m compileall \
+	/opt/$DJANGO_PROJECT
 
 # The data directory
-mkdir -p /var/local/lib/$DJANGO_PROJECT
-chown $DJANGO_USER /var/local/lib/$DJANGO_PROJECT
+mkdir -p /var/opt/$DJANGO_PROJECT
+chown $DJANGO_USER /var/opt/$DJANGO_PROJECT
 
 # The production settings
-mkdir -p /etc/$DJANGO_PROJECT
-cat <<-EOF1 >/etc/$DJANGO_PROJECT/settings.py
+mkdir -p /etc/opt/$DJANGO_PROJECT
+cat <<-EOF1 >/etc/opt/$DJANGO_PROJECT/settings.py
 	from $DJANGO_PROJECT.settings.base import *
 
 	DEBUG = True
@@ -61,18 +61,18 @@ cat <<-EOF1 >/etc/$DJANGO_PROJECT/settings.py
 	DATABASES = {
 	    'default': {
 	        'ENGINE': 'django.db.backends.sqlite3',
-	        'NAME': '/var/local/lib/$DJANGO_PROJECT/$DJANGO_PROJECT.db',
+	        'NAME': '/var/opt/$DJANGO_PROJECT/$DJANGO_PROJECT.db',
 	    }
 	}
 EOF1
-chgrp $DJANGO_GROUP /etc/$DJANGO_PROJECT/settings.py
-chmod u=rw,g=r,o= /etc/$DJANGO_PROJECT/settings.py
-/usr/local/$DJANGO_PROJECT-virtualenv/bin/python -m compileall \
-	/etc/$DJANGO_PROJECT
+chgrp $DJANGO_GROUP /etc/opt/$DJANGO_PROJECT/settings.py
+chmod u=rw,g=r,o= /etc/opt/$DJANGO_PROJECT/settings.py
+/opt/$DJANGO_PROJECT/venv/bin/python -m compileall \
+	/etc/opt/$DJANGO_PROJECT
 if [ $PYTHON = "2" ]; then
-	chgrp -R $DJANGO_GROUP /etc/$DJANGO_PROJECT/settings.pyc
+	chgrp -R $DJANGO_GROUP /etc/opt/$DJANGO_PROJECT/settings.pyc
 else
-	chgrp -R $DJANGO_GROUP /etc/$DJANGO_PROJECT/__pycache__
+	chgrp -R $DJANGO_GROUP /etc/opt/$DJANGO_PROJECT/__pycache__
 fi
 
 #
@@ -184,25 +184,24 @@ cat <<-EOF1 >/etc/$DJANGO_PROJECT/settings.py
 	DATABASES = {
 	    'default': {
 	        'ENGINE': 'django.db.backends.sqlite3',
-	        'NAME': '/var/local/lib/$DJANGO_PROJECT/$DJANGO_PROJECT.db',
+	        'NAME': '/var/opt/$DJANGO_PROJECT/$DJANGO_PROJECT.db',
 	    }
 	}
 	STATIC_ROOT = '/var/cache/$DJANGO_PROJECT/static/'
 	STATIC_URL = '/static/'
 EOF1
-/usr/local/$DJANGO_PROJECT-virtualenv/bin/python -m compileall \
-	/etc/$DJANGO_PROJECT
+/opt/$DJANGO_PROJECT/venv/bin/python -m compileall \
+	/etc/opt/$DJANGO_PROJECT
 if [ $PYTHON = "2" ]; then
-	chgrp -R $DJANGO_GROUP /etc/$DJANGO_PROJECT/settings.pyc
+	chgrp -R $DJANGO_GROUP /etc/opt/$DJANGO_PROJECT/settings.pyc
 else
-	chgrp -R $DJANGO_GROUP /etc/$DJANGO_PROJECT/__pycache__
+	chgrp -R $DJANGO_GROUP /etc/opt/$DJANGO_PROJECT/__pycache__
 fi
 mkdir -p /var/cache/$DJANGO_PROJECT/static
-PYTHONPATH=/etc/$DJANGO_PROJECT:/usr/local/$DJANGO_PROJECT \
-	/usr/local/$DJANGO_PROJECT-virtualenv/bin/python \
-	/usr/local/$DJANGO_PROJECT/manage.py \
-	collectstatic --settings=settings --noinput
-
+PYTHONPATH=/etc/opt/$DJANGO_PROJECT:/opt/$DJANGO_PROJECT \
+	/opt/$DJANGO_PROJECT/venv/bin/python \
+	/opt/$DJANGO_PROJECT/manage.py collectstatic \
+	--settings=settings --noinput
 if [ $WEB_SERVER = 'nginx' ]; then
 	# Setting up nginx
 	cat <<-EOF1 >/etc/nginx/sites-available/$DOMAIN

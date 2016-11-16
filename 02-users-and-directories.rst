@@ -19,7 +19,7 @@ name, although it might be the same as ``$DJANGO_PROJECT``.
 
 .. code-block:: bash
 
-    adduser --system --home=/var/local/lib/$DJANGO_PROJECT \
+    adduser --system --home=/opt/$DJANGO_PROJECT \
         --no-create-home --disabled-password --group \
         --shell=/bin/bash $DJANGO_USER
 
@@ -33,12 +33,11 @@ Here is why we use these parameters:
     convention for knowing that this is a system user. Otherwise there
     isn't much difference.
 
-**--home=/var/local/lib/$DJANGO_PROJECT**
+**--home=/opt/$DJANGO_PROJECT**
     This specifies the home directory for the user. For system users, it
     doesn't really matter which directory we will choose, but by
     convention we choose the one which holds the program's data. We will
-    talk about the ``/var/local/lib/$DJANGO_PROJECT`` directory
-    later.
+    talk about the ``/opt/$DJANGO_PROJECT`` directory later.
 
 **--no-create-home**
     We tell ``adduser`` to not create the home directory. We could allow
@@ -91,19 +90,19 @@ or like this::
 I prefer the former, but some people prefer the extra repository root
 directory.
 
-We are going to place your project inside ``/usr/local``. This is the
-standard Debian directory for program files that are not installed with
-``apt-get``. So, clone or otherwise copy your django project in
-``/usr/local/$DJANGO_PROJECT`` or in
-``/usr/local/$REPOSITORY_ROOT``. Do this **as the root user**.
-Create the virtualenv for your project **as the root user** as well:
+We are going to place your project inside ``/opt``. This is a standard
+directory for program files that are not part of the operating system.
+So, clone or otherwise copy your django project in
+``/opt/$DJANGO_PROJECT`` or in ``/opt/$REPOSITORY_ROOT``. Do
+this **as the root user**.  Create the virtualenv for your project **as
+the root user** as well:
 
 .. code-block:: bash
 
     virtualenv --system-site-packages --python=/usr/bin/python3 \
-        /usr/local/$DJANGO_PROJECT-virtualenv
-    /usr/local/$DJANGO_PROJECT-virtualenv/bin/pip install \
-        -r /usr/local/$DJANGO_PROJECT/requirements.txt
+        /opt/$DJANGO_PROJECT/venv
+    /opt/$DJANGO_PROJECT/venv/bin/pip install \
+        -r /opt/$DJANGO_PROJECT/requirements.txt
 
 While it might seem strange that we are creating these as the root user
 instead of as ``$DJANGO_USER``, it is standard practice
@@ -115,31 +114,30 @@ better for program files to belong to root.
 
 This poses a problem: when ``$DJANGO_USER`` attempts to execute your
 Django application, it will not have permission to write
-the compiled Python files in the ``/usr/local/$DJANGO_PROJECT``
-directory, because this is owned by root. So we need to pre-compile
+the compiled Python files in the ``/opt/$DJANGO_PROJECT`` directory,
+because this is owned by root. So we need to pre-compile
 these files as root:
 
 .. code-block:: bash
 
-    /usr/local/$DJANGO_PROJECT-virtualenv/bin/python -m compileall \
-        /usr/local/$DJANGO_PROJECT
+    /opt/$DJANGO_PROJECT/venv/bin/python -m compileall \
+        /opt/$DJANGO_PROJECT
 
 The data directory
 ------------------
 
 As I already hinted, our data directory is going to be
-``/var/local/lib/$DJANGO_PROJECT``. This is in line with the Debian
-policy where the data for programs other than those installed with
-``apt-get`` is stored in ``/var/local/lib``. Most notably, we will store
-media files in there (but this in a chapter later). We will also store
-the SQLite file in there. Usually in production we use a different
-RDBMS, but we will deal with this in a later chapter as well. So, let's
-now prepare the data directory:
+``/var/opt/$DJANGO_PROJECT``. This is a standard policy where the data
+for programs installed in ``/opt`` is stored in ``/var/opt``. Most
+notably, we will store media files in there (but this in a chapter
+later). We will also store the SQLite file in there. Usually in
+production we use a different RDBMS, but we will deal with this in a
+later chapter as well. So, let's now prepare the data directory:
 
 .. code-block:: bash
 
-    mkdir -p /var/local/lib/$DJANGO_PROJECT
-    chown $DJANGO_USER /var/local/lib/$DJANGO_PROJECT
+    mkdir -p /var/opt/$DJANGO_PROJECT
+    chown $DJANGO_USER /var/opt/$DJANGO_PROJECT
 
 Besides creating the directory, we also changed its owner to
 ``$DJANGO_USER``. This is necessary because Django will be needing to
@@ -149,16 +147,17 @@ needs permission to do so.
 The production settings
 -----------------------
 
-Debian puts configuration files in ``/etc``, and it is a good idea to
-place our configuration there as well:
+Debian puts configuration files in ``/etc``. More specifically, the
+configuration for programs that are installed in ``/opt`` is supposed to
+go to ``/etc/opt``, which is what we will do:
 
 .. code-block:: bash
 
-    mkdir /etc/$DJANGO_PROJECT
+    mkdir /etc/opt/$DJANGO_PROJECT
 
 For the time being this directory is going to have only ``settings.py``;
-later it will have a bit more. Your ``/etc/$DJANGO_PROJECT/settings.py``
-file should be like this:
+later it will have a bit more. Your
+``/etc/opt/$DJANGO_PROJECT/settings.py`` file should be like this:
 
 .. code-block:: Python
 
@@ -169,7 +168,7 @@ file should be like this:
     DATABASES = {
         'default': {
             'ENGINE': 'django.db.backends.sqlite3',
-            'NAME': '/var/local/lib/$DJANGO_PROJECT/$DJANGO_PROJECT.db',
+            'NAME': '/var/opt/$DJANGO_PROJECT/$DJANGO_PROJECT.db',
         }
     }
 
@@ -207,7 +206,7 @@ the settings directory of the repository. Call me a perfectionist (with
 deadlines), but the production settings are the administrator's job, not
 the developer's, and your django project's repository is made by the
 developers. You might claim that you are both the developer and the
-administrator, since it's you who are deploying the project and
+administrator, since it's you who are developing the project and
 maintaining the deployment, but in this case you are assuming two roles,
 wearing a different hat each time.  Production settings don't belong in
 the project repository any more than the nginx or PostgreSQL
@@ -219,14 +218,14 @@ management system such as Ansible.  This, however, takes time to learn
 and setup, and your deadlines are probably sooner. So you may need to
 compromise and store your production settings elsewhere, even in your
 project repository. If you do that, then your
-``/etc/$DJANGO_PROJECT/settings.py`` file shall eventually be a
+``/etc/opt/$DJANGO_PROJECT/settings.py`` file shall eventually be a
 single line::
 
     from $DJANGO_PROJECT.settings.production import *
 
 However, I don't want you to do this now. We aren't yet going to use our
 real production settings, because we are going step by step. Instead,
-create the ``/etc/$DJANGO_PROJECT/settings.py`` file as I explained
+create the ``/etc/opt/$DJANGO_PROJECT/settings.py`` file as I explained
 in the beginning of this section.
 
 If you don't use this pattern at all, and you have a single
@@ -252,17 +251,17 @@ vulnerability and could be attacked, and the attacker might be able to
 give commands as the user running that application. In that case, if we
 have secured our ``settings.py``, the attacker won't be able to read it.
 Eventually servers get compromised, and we try to set up the system in
-such a way to minimize the damage, and we can minimize it if we contain
-it, and we can contain it if the compromising of an application does not
-result in the compromising of other applications. This is why we want to
-run each application in its own user and its own group.
+such a way as to minimize the damage, and we can minimize it if we
+contain it, and we can contain it if the compromising of an application
+does not result in the compromising of other applications. This is why
+we want to run each application in its own user and its own group.
 
 Here is how to harden the permissions of ``settings.py``:
 
 .. code-block:: bash
 
-   chgrp $DJANGO_GROUP /etc/$DJANGO_PROJECT/settings.py
-   chmod u=rw,g=r,o= /etc/$DJANGO_PROJECT/settings.py
+   chgrp $DJANGO_GROUP /etc/opt/$DJANGO_PROJECT/settings.py
+   chmod u=rw,g=r,o= /etc/opt/$DJANGO_PROJECT/settings.py
 
 What this does is make ``settings.py`` unreadable by users other than
 ``root`` and ``$DJANGO_USER``. The file is owned by ``root``, and the
@@ -296,15 +295,15 @@ way we use here works the same in FreeBSD, HP-UX, and all other Unixes,
 and it is common practice everywhere.
 
 Finally, we need to **compile** the settings file. Your settings file
-and the ``/etc/$DJANGO_PROJECT`` directory is owned by root, and, as
-with the files in ``/usr/local``, Django won't be able to write the
+and the ``/etc/opt/$DJANGO_PROJECT`` directory is owned by root, and, as
+with the files in ``/opt``, Django won't be able to write the
 compiled version, so we pre-compile it as root:
 
 .. code-block:: bash
 
-    /usr/local/$DJANGO_PROJECT-virtualenv/bin/python -m compileall \
-        /etc/$DJANGO_PROJECT
-    chgrp -R $DJANGO_GROUP /etc/$DJANGO_PROJECT/__pycache__
+    /opt/$DJANGO_PROJECT/venv/bin/python -m compileall \
+        /etc/opt/$DJANGO_PROJECT
+    chgrp -R $DJANGO_GROUP /etc/opt/$DJANGO_PROJECT/__pycache__
 
 When Python compiles a ``.py`` file, it gives the ``.pyc`` file the same
 mode as the original file, so in our case ``settings.pyc`` will be
@@ -313,12 +312,12 @@ non-accessible by others. However, Python does not set the same owner
 and group to the ``.pyc`` file as in the original, which is why we need
 to change the group. The above ``chgrp`` command works with Python 3,
 and recursively modifies the group of directory
-``/etc/$DJANGO_PROJECT/__pycache__`` and of the files it contains.
+``/etc/opt/$DJANGO_PROJECT/__pycache__`` and of the files it contains.
 In Python 2, use this instead:
 
 .. code-block:: bash
 
-    chgrp -R $DJANGO_GROUP /etc/$DJANGO_PROJECT/settings.pyc
+    chgrp -R $DJANGO_GROUP /etc/opt/$DJANGO_PROJECT/settings.pyc
 
 Running the Django server
 -------------------------
@@ -326,22 +325,22 @@ Running the Django server
 .. code-block:: bash
 
     su $DJANGO_USER
-    source /usr/local/$DJANGO_PROJECT-virtualenv/bin/activate
-    export PYTHONPATH=/etc/$DJANGO_PROJECT:/usr/local/$DJANGO_PROJECT
+    source /opt/$DJANGO_PROJECT/venv/bin/activate
+    export PYTHONPATH=/etc/opt/$DJANGO_PROJECT:/opt/$DJANGO_PROJECT
     export DJANGO_SETTINGS_MODULE=settings
-    python /usr/local/$DJANGO_PROJECT/manage.py migrate
-    python /usr/local/$DJANGO_PROJECT/manage.py runserver 0.0.0.0:8000
+    python /opt/$DJANGO_PROJECT/manage.py migrate
+    python /opt/$DJANGO_PROJECT/manage.py runserver 0.0.0.0:8000
 
 You could also do that in an exceptionally long command (provided you
 have already done the ``migrate`` part), like this:
 
 .. code-block:: bash
 
-    PYTHONPATH=/etc/$DJANGO_PROJECT:/usr/local/$DJANGO_PROJECT \
+    PYTHONPATH=/etc/opt/$DJANGO_PROJECT:/opt/$DJANGO_PROJECT \
         DJANGO_SETTINGS_MODULE=settings \
         su $DJANGO_USER -c \
-        "/usr/local/$DJANGO_PROJECT-virtualenv/bin/python \
-        /usr/local/$DJANGO_PROJECT/manage.py runserver 0.0.0.0:8000"
+        "/opt/$DJANGO_PROJECT/venv/bin/python \
+        /opt/$DJANGO_PROJECT/manage.py runserver 0.0.0.0:8000"
 
 Do you understand that very clearly? If not, here are some tips:
 
@@ -355,16 +354,16 @@ Do you understand that very clearly? If not, here are some tips:
    ``$DJANGO_PROJECT.settings``, or maybe
    ``$DJANGO_PROJECT.settings.local``).
  * When Django attempts to import ``settings``, Python looks in its
-   path. Because ``/etc/$DJANGO_PROJECT`` is listed first in
+   path. Because ``/etc/opt/$DJANGO_PROJECT`` is listed first in
    ``PYTHONPATH``, Python will first look there for ``settings.py``, and
    it will find it there.
  * Likewise, when at some point Django attempts to import
    ``your_django_app``, Python will look in
-   ``/etc/$DJANGO_PROJECT``; it won't find it there, so then it will
-   look in ``/usr/local/$DJANGO_PROJECT``, since this is next in
+   ``/etc/opt/$DJANGO_PROJECT``; it won't find it there, so then it will
+   look in ``/opt/$DJANGO_PROJECT``, since this is next in
    ``PYTHONPATH``, and it will find it there.
  * If, before running ``manage.py [whatever]``, we had changed directory
-   to ``/usr/local/$DJANGO_PROJECT``, we wouldn't need to specify
+   to ``/opt/$DJANGO_PROJECT``, we wouldn't need to specify
    that directory in ``PYTHONPATH``, because Python always adds the
    current directory to its path. This is why, in development, you just
    tell it ``python manage.py [whatever]`` and it finds your project.
@@ -376,10 +375,10 @@ Instead of using ``DJANGO_SETTINGS_MODULE``, you can also use the
 
 .. code-block:: bash
 
-   PYTHONPATH=/etc/$DJANGO_PROJECT:/usr/local/$DJANGO_PROJECT \
+   PYTHONPATH=/etc/opt/$DJANGO_PROJECT:/opt/$DJANGO_PROJECT \
        su $DJANGO_USER -c \
-       "/usr/local/$DJANGO_PROJECT-virtualenv/bin/python \
-       /usr/local/$DJANGO_PROJECT/manage.py
+       "/opt/$DJANGO_PROJECT/venv/bin/python \
+       /opt/$DJANGO_PROJECT/manage.py
        runserver --settings=settings 0.0.0.0:8000"
 
 (``manage.py`` also supports a ``--pythonpath`` parameter which could be
@@ -398,24 +397,21 @@ Chapter summary
 
  * Create a system user and group with the same name as your Django
    project.
- * Put your Django project in ``/usr/local``, with all files owned by
-   root.
- * Put your virtualenv in ``/usr/local``, with the directory named like
-   your Django project with ``-virtualenv`` appended, with all files
+ * Put your Django project in ``/opt``, with all files owned by root.
+ * Put your virtualenv in ``/opt/$DJANGO_PROJECT/venv``, with all files
    owned by root.
- * Put your data files in a subdirectory of ``/var/local/lib`` with the
-   same name as your Django project, owned by the system user you
-   created. If you are using SQLite, the database file will go in there.
- * Put your settings file in a subdirectory of ``/etc`` with the same
-   name as your Django project, with all files owned by root. Set
+ * Put your data files in a subdirectory of ``/var/opt`` with the same
+   name as your Django project, owned by the system user you created. If
+   you are using SQLite, the database file will go in there.
+ * Put your settings file in a subdirectory of ``/etc/opt`` with the
+   same name as your Django project, with all files owned by root. Set
    ``settings.py`` to belong to the system group you created, and to not
    be readable by other users.
- * Precompile the files in ``/usr/local/$DJANGO_PROJECT`` and
-   ``/etc/$DJANGO_PROJECT``. Change the group of the compiled
+ * Precompile the files in ``/opt/$DJANGO_PROJECT`` and
+   ``/etc/opt/$DJANGO_PROJECT``. Change the group of the compiled
    configuration files to the system group you created and verify it's
    not readable by other users.
- * Run ``manage.py`` as the system user you created, after setting
-   the environment variable
-   ``PYTHONPATH=/etc/$DJANGO_PROJECT:/usr/local/$DJANGO_PROJECT``, and
-   specifying ``--settings=settings`` or setting the environment
-   variable ``DJANGO_SETTINGS_MODULE=settings``.
+ * Run ``manage.py`` as the system user you created, after setting the
+   environment variable
+   ``PYTHONPATH=/etc/opt/$DJANGO_PROJECT:/opt/$DJANGO_PROJECT`` and
+   setting the environment variable ``DJANGO_SETTINGS_MODULE=settings``.

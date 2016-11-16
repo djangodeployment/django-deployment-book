@@ -35,15 +35,15 @@ supports only Python 2.
 
 .. code-block:: bash
 
-   /usr/local/$DJANGO_PROJECT-virtualenv/bin/pip install gunicorn
+   /opt/$DJANGO_PROJECT/venv/bin/pip install gunicorn
 
 Now run Django with Gunicorn:
 
 .. code-block:: bash
 
    su $DJANGO_USER
-   source /usr/local/$DJANGO_PROJECT/bin/activate
-   export PYTHONPATH=/etc/$DJANGO_PROJECT:/usr/local/$DJANGO_PROJECT
+   source /opt/$DJANGO_PROJECT/venv/bin/activate
+   export PYTHONPATH=/etc/opt/$DJANGO_PROJECT:/opt/$DJANGO_PROJECT
    export DJANGO_SETTINGS_MODULE=settings
    gunicorn $DJANGO_PROJECT.wsgi:application
 
@@ -51,9 +51,9 @@ You can also write it as one long command, like this:
 
 .. code-block:: bash
 
-   PYTHONPATH=/etc/$DJANGO_PROJECT:/usr/local/$DJANGO_PROJECT \
+   PYTHONPATH=/etc/opt/$DJANGO_PROJECT:/opt/$DJANGO_PROJECT \
        DJANGO_SETTINGS_MODULE=settings \
-       su $DJANGO_USER -c "/usr/local/$DJANGO_PROJECT/bin/gunicorn \
+       su $DJANGO_USER -c "/opt/$DJANGO_PROJECT/venv/bin/gunicorn \
        $DJANGO_PROJECT.wsgi:application"
 
 Either of the two versions above will start Gunicorn, which will be listening
@@ -64,7 +64,7 @@ What actually happens here is that ``gunicorn``, a Python program, does
 something like ``from $DJANGO_PROJECT.wsgi import application``. It uses
 ``$DJANGO_PROJECT.wsgi`` and ``application`` because we told it so in
 the command line. Open the file
-``/usr/local/$DJANGO_PROJECT/$DJANGO_PROJECT/wsgi.py`` to see that
+``/opt/$DJANGO_PROJECT/$DJANGO_PROJECT/wsgi.py`` to see that
 ``application`` is defined there. In fact, ``application`` is a Python
 callable. Now each time Gunicorn receives an HTTP request, it calls
 ``application`` in a standardized way that is specified by the WSGI
@@ -102,8 +102,8 @@ again, but this time with a few parameters:
 .. code-block:: bash
 
    su $DJANGO_USER
-   source /usr/local/$DJANGO_PROJECT/bin/activate
-   export PYTHONPATH=/etc/$DJANGO_PROJECT:/usr/local/$DJANGO_PROJECT
+   source /opt/$DJANGO_PROJECT/venv/bin/activate
+   export PYTHONPATH=/etc/opt/$DJANGO_PROJECT:/opt/$DJANGO_PROJECT
    export DJANGO_SETTINGS_MODULE=settings
    gunicorn --worker-class=gevent --workers=1 \
        --log-file=/var/log/$DJANGO_PROJECT/gunicorn.log \

@@ -116,7 +116,7 @@ found":
         listen [::]:80 default_server;
         return 404;
     }
-    
+
 Configuring nginx for django
 ----------------------------
 
@@ -146,10 +146,10 @@ enough:
 
 .. code-block:: bash
 
-   PYTHONPATH=/etc/$DJANGO_PROJECT:/usr/local/$DJANGO_PROJECT \
+   PYTHONPATH=/etc/opt/$DJANGO_PROJECT:/opt/$DJANGO_PROJECT \
        su $DJANGO_USER -c \
-       "/usr/local/$DJANGO_PROJECT-virtualenv/bin/python \
-       /usr/local/$DJANGO_PROJECT/manage.py \
+       "/opt/$DJANGO_PROJECT/venv/bin/python \
+       /opt/$DJANGO_PROJECT/manage.py \
        runserver --settings=settings 8000"
 
 Now go to http://$DOMAIN/ and you should see your Django
@@ -373,10 +373,10 @@ enough:
 
 .. code-block:: bash
 
-   PYTHONPATH=/etc/$DJANGO_PROJECT:/usr/local/$DJANGO_PROJECT \
+   PYTHONPATH=/etc/opt/$DJANGO_PROJECT:/opt/$DJANGO_PROJECT \
        su $DJANGO_USER -c \
-       "/usr/local/$DJANGO_PROJECT-virtualenv/bin/python \
-       /usr/local/$DJANGO_PROJECT/manage.py \
+       "/opt/$DJANGO_PROJECT/venv/bin/python \
+       /opt/$DJANGO_PROJECT/manage.py \
        runserver --settings=settings 8000"
 
 Now go to http://$DOMAIN/ and you should see your Django project in
