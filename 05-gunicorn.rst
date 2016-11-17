@@ -107,7 +107,7 @@ again, but this time with a few parameters:
    export DJANGO_SETTINGS_MODULE=settings
    gunicorn --worker-class=gevent --workers=1 \
        --log-file=/var/log/$DJANGO_PROJECT/gunicorn.log \
-       --bind 127.0.0.1:8000 --bind [::1]:8000 \
+       --bind=127.0.0.1:8000 --bind=[::1]:8000 \
        $DJANGO_PROJECT.wsgi:application 
 
 Here is what these parameters mean:
@@ -151,7 +151,7 @@ Here is what these parameters mean:
 ``--log-file=/var/log/$DJANGO_PROJECT/gunicorn.log``
    I believe this is self-explanatory.
 
-``--bind 127.0.0.1:8000``
+``--bind=127.0.0.1:8000``
    This tells Gunicorn to listen on port 8000 of the local network
    interface. This is the default, but we specify it here for two
    reasons:
@@ -163,7 +163,7 @@ Here is what these parameters mean:
     2. We specify ``--bind`` twice (see below), to also listen on IPv6.
        The second time would override the default anyway.
 
-``--bind [::1]:8000``
+``--bind=[::1]:8000``
    This tells Gunicorn to also listen on port 8000 of the local IPv6
    network interface. This must be specified if IPv6 is enabled on the
    virtual server. It is not specified, things may or may not work, and
@@ -185,6 +185,9 @@ Here is what these parameters mean:
    such cases, and not speak with "maybe" and "probably", but it doesn't
    matter. If your server has IPv6, you must set it up correctly and use
    this option. If not, you should not use this option.
+
+Configuring systemd
+-------------------
 
 Chapter summary
 ---------------

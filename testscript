@@ -30,26 +30,29 @@ apt-get install -y git python3 virtualenvwrapper
 
 # Creating a user and group
 if ! getent passwd $DJANGO_PROJECT; then
-	adduser --system --home=/opt/$DJANGO_PROJECT \
+	adduser --system --home=/var/opt/$DJANGO_PROJECT \
 		--no-create-home --disabled-password --group \
 		--shell=/bin/bash $DJANGO_USER
 fi
 
 # The program files
 cd /opt
-[ -d $DJANGO_PROJECT/.git ] \
-	|| git clone $DJANGO_PROJECT_REPOSITORY
+[ -d $DJANGO_PROJECT/.git ] || git clone $DJANGO_PROJECT_REPOSITORY
 [ -d $DJANGO_PROJECT/venv ] \
-	virtualenv --system-site-packages --python=$PYTHON_EXECUTABLE \
+	|| virtualenv --system-site-packages --python=$PYTHON_EXECUTABLE \
 		/opt/$DJANGO_PROJECT/venv
 /opt/$DJANGO_PROJECT/venv/bin/pip install \
 	-r /opt/$DJANGO_PROJECT/requirements.txt
 /opt/$DJANGO_PROJECT/venv/bin/python -m compileall \
-	/opt/$DJANGO_PROJECT
+	-x /opt/$DJANGO_PROJECT/venv/ /opt/$DJANGO_PROJECT
 
 # The data directory
 mkdir -p /var/opt/$DJANGO_PROJECT
 chown $DJANGO_USER /var/opt/$DJANGO_PROJECT
+
+# The log directory
+mkdir -p /var/log/$DJANGO_PROJECT
+chown $DJANGO_USER /var/log/$DJANGO_PROJECT
 
 # The production settings
 mkdir -p /etc/opt/$DJANGO_PROJECT
@@ -176,7 +179,7 @@ fi
 #
 
 # Setting up Django
-cat <<-EOF1 >/etc/$DJANGO_PROJECT/settings.py
+cat <<-EOF1 >/etc/opt/$DJANGO_PROJECT/settings.py
 	from $DJANGO_PROJECT.settings.base import *
 
 	DEBUG = True
@@ -243,3 +246,29 @@ else
 	EOF1
 	service apache2 reload
 fi
+
+#
+# GUNICORN
+#
+
+/opt/$DJANGO_PROJECT/venv/bin/pip install gunicorn gevent
+cat <<-EOF1 >/etc/systemd/system/$DJANGO_PROJECT.service
+	[Unit]
+	Description=$DJANGO_PROJECT
+
+	[Service]
+	User=$DJANGO_USER
+	Group=$DJANGO_GROUP
+	Environment="PYTHONPATH=/etc/opt/$DJANGO_PROJECT:/opt/$DJANGO_PROJECT"
+	Environment="DJANGO_SETTINGS_MODULE=settings"
+	ExecStart=/opt/$DJANGO_PROJECT/venv/bin/gunicorn \
+	    --worker-class=gevent --workers=1 \
+	    --log-file=/var/log/$DJANGO_PROJECT/gunicorn.log \
+	    --bind=127.0.0.1:8000 --bind=[::1]:8000 \
+	    $DJANGO_PROJECT.wsgi:application
+
+	[Install]
+	WantedBy=multi-user.target
+EOF1
+systemctl enable $DJANGO_PROJECT
+service $DJANGO_PROJECT start

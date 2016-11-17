@@ -19,7 +19,7 @@ name, although it might be the same as ``$DJANGO_PROJECT``.
 
 .. code-block:: bash
 
-    adduser --system --home=/opt/$DJANGO_PROJECT \
+    adduser --system --home=/var/opt/$DJANGO_PROJECT \
         --no-create-home --disabled-password --group \
         --shell=/bin/bash $DJANGO_USER
 
@@ -33,11 +33,11 @@ Here is why we use these parameters:
     convention for knowing that this is a system user. Otherwise there
     isn't much difference.
 
-**--home=/opt/$DJANGO_PROJECT**
+**--home=/var/opt/$DJANGO_PROJECT**
     This specifies the home directory for the user. For system users, it
     doesn't really matter which directory we will choose, but by
     convention we choose the one which holds the program's data. We will
-    talk about the ``/opt/$DJANGO_PROJECT`` directory later.
+    talk about the ``/var/opt/$DJANGO_PROJECT`` directory later.
 
 **--no-create-home**
     We tell ``adduser`` to not create the home directory. We could allow
@@ -121,18 +121,23 @@ these files as root:
 .. code-block:: bash
 
     /opt/$DJANGO_PROJECT/venv/bin/python -m compileall \
-        /opt/$DJANGO_PROJECT
+	-x /opt/$DJANGO_PROJECT/venv/ /opt/$DJANGO_PROJECT
+
+The option ``-x /opt/$DJANGO_PROJECT/venv/`` tells compileall to exclude
+directory  ``/opt/$DJANGO_PROJECT/venv`` from compilation. This is
+because the virtualenv takes care of its own compilation and we should
+not interfere.
 
 The data directory
 ------------------
 
 As I already hinted, our data directory is going to be
-``/var/opt/$DJANGO_PROJECT``. This is a standard policy where the data
-for programs installed in ``/opt`` is stored in ``/var/opt``. Most
-notably, we will store media files in there (but this in a chapter
-later). We will also store the SQLite file in there. Usually in
-production we use a different RDBMS, but we will deal with this in a
-later chapter as well. So, let's now prepare the data directory:
+``/var/opt/$DJANGO_PROJECT``. It is standard policy for programs
+installed in ``/opt`` to put their data in ``/var/opt``. Most notably,
+we will store media files in there (in a later chapter later).  We will
+also store the SQLite file there. Usually in production we use a
+different RDBMS, but we will deal with this in a later chapter as well.
+So, let's now prepare the data directory:
 
 .. code-block:: bash
 
@@ -143,6 +148,18 @@ Besides creating the directory, we also changed its owner to
 ``$DJANGO_USER``. This is necessary because Django will be needing to
 write data in that directory, and it will be running as that user, so it
 needs permission to do so.
+
+The log directory
+-----------------
+
+Later we will setup our Django project to write to log files in
+``/var/log/$DJANGO_PROJECT``. Let's prepare the directory.
+
+.. code-block:: bash
+
+    mkdir -p /var/log/$DJANGO_PROJECT
+    chown $DJANGO_USER /var/log/$DJANGO_PROJECT
+
 
 The production settings
 -----------------------
