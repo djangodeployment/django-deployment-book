@@ -84,8 +84,16 @@ get a search icon (if you don't use ``django.contrib.admin``, pick up
 another static file that you expect to see, or browse the directory
 ``/var/cache/$DJANGO_PROJECT/static``).
 
-Figure 4.1 explains how this works. Go study it now, and after everything
-is clear, come back here.
+.. only:: latex
+
+   The figure in the next page explains how this works. Go study it now,
+   and after everything is clear, come back here.
+
+.. only:: html
+
+   This picture explains how it works:
+
+.. figure:: how-static-files-work-nginx.png
 
 The only thing that remains to clear up is what exactly these
 ``location`` blocks mean. ``location /static/`` means that the
@@ -136,8 +144,16 @@ get a search icon (if you don't use ``django.contrib.admin``, pick up
 another static file that you expect to see, or browse the directory
 ``/var/cache/$DJANGO_PROJECT/static``).
 
-Figure 4.2 explains how this works. Go study it now, and after everything
-is clear, come back here.
+.. only:: latex
+
+   The figure in the next page explains how this works. Go study it now,
+   and after everything is clear, come back here.
+
+.. only:: html
+
+   This picture explains how it works:
+
+.. figure:: how-static-files-work-apache.png
 
 Now let's examine how the configuration above produces these results.
 The directive ``ProxyPass / http://localhost:8000/`` tells Apache that,
