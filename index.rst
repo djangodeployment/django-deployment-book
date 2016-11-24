@@ -9,4 +9,5 @@ Deploying Django on a single Debian or Ubuntu server
    03-web-server
    04-static-files
    05-gunicorn
+   06-settings
    appendix

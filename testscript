@@ -272,3 +272,28 @@ cat <<-EOF1 >/etc/systemd/system/$DJANGO_PROJECT.service
 EOF1
 systemctl enable $DJANGO_PROJECT
 service $DJANGO_PROJECT start
+
+#
+# SETTINGS
+#
+
+# Email
+cat <<-EOF1 >>/etc/opt/$DJANGO_PROJECT/settings.py
+	SERVER_EMAIL = 'noreply@$DOMAIN'
+	DEFAULT_FROM_EMAIL = 'noreply@$DOMAIN'
+	ADMINS = [
+	    ('$ADMIN_NAME', '$ADMIN_EMAIL_ADDRESS'),
+	]
+	MANAGERS = ADMINS
+
+	EMAIL_HOST = '$EMAIL_HOST'
+	EMAIL_HOST_USER = '$EMAIL_HOST_USER'
+	EMAIL_HOST_PASSWORD = '$EMAIL_HOST_PASSWORD'
+	EMAIL_PORT = 587
+	EMAIL_USE_TLS = True
+
+	DEBUG = False
+EOF1
+/opt/$DJANGO_PROJECT/venv/bin/python -m compileall \
+	/etc/opt/$DJANGO_PROJECT
+service $DJANGO_PROJECT restart
