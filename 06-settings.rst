@@ -17,24 +17,23 @@ such as no disk space, out of memory, or something else going wrong. In
 many of these cases, Django will throw a "500 error" to the user and
 will try to email you. You really need to receive that email.
 
-First, you need a mail server.
+First, you need a mail server to which you can connect and ask to send
+an email. Such a mail server is called a "smarthost". The mechanism with
+which Django connects to the smarthost is pretty much the same as the
+one with which your desktop or mobile mail client connects to an
+outgoing mail server. However, the term "outgoing mail server" is mostly
+used for mailing software, and "smarthost" is used when some unattended
+software like your Django app sends email. You can often, but not
+always, use your outgoing mail server as smarthost.
 
-While you could install exim or postfix and make your machine a mail
-server as well, I don't recommend it. Running a mail server can easily
-fill in a book by itself. I used to run mail servers for years but I've
-got ridden of all of them; it's not worth the effort when I can do the
-same thing at runbox.com for € 30 per year. I'm using, you guessed it,
-runbox.com, but there are many other providers, one of the most popular
-being Gmail (I believe, however, that it's not possible to use Gmail as
-an outgoing mail server if all you have is a free account, and even if
-it is possible, it is hard to setup). Django will only use the mail
-server as an outgoing mail server. When it needs to send an email it
-will connect to it, send the email, and that's it. Pretty much in the
-same way you send emails from a mail client. The difference is that with
-the mail client you also read emails, but Django will do no such thing.
+I'm using Runbox for my email, and I also use it as a smarthost.  There
+are many other providers, one of the most popular being Gmail (I
+believe, however, that it's not possible to use Gmail as a smarthost if
+all you have is a free account, and even if it is possible, it is hard
+to setup).
 
-Let's set it up and then we will discuss more. Add the
-following to ``/etc/opt/$DJANGO_PROJECT/settings.py``::
+Let's set it up and then we will discuss more. Add the following to
+``/etc/opt/$DJANGO_PROJECT/settings.py``::
 
     SERVER_EMAIL = 'noreply@$DOMAIN'
     DEFAULT_FROM_EMAIL = 'noreply@$DOMAIN'
@@ -54,13 +53,14 @@ appear to come from. It is set in the "From:" field of the email. The
 default is "root@localhost", and while "root" is OK, "localhost" is not,
 and some mail servers may refuse the email. The domain name where your
 Django application runs is usually OK, but if this doesn't work you can
-use any other valid domain.
+use any other valid domain. The domain of your email address should work
+properly.
 
 If your Django project does not send any emails (other than the error
 messages Django will send anyway), DEFAULT_FROM_EMAIL_ does not need to
-be specified. If it does send emails, it might be using
+be specified. If it does send emails, it may be using
 `django.core.mail.EmailMessage`_. In order to specify what will be in
-the "From:" field of the email, ``EmailMessage`` accepts an
+the "From:" field of the email, ``EmailMessage`` accepts a
 ``from_email`` argument at initialization; if this is unspecified, it
 will use ``DEFAULT_FROM_EMAIL``. So ``DEFAULT_FROM_EMAIL`` is exactly
 what it says: the default ``from_email`` of ``EmailMessage``. It's a
@@ -89,12 +89,12 @@ these::
 
 However, the details depend on the provider and the account type you
 have. I don't use my personal email, which is
-antonis@antonischristofdes.com (runbox.com requires you to change @ to %
+antonis@antonischristofdes.com (Runbox requires you to change @ to %
 when you use it as a user name for login), because my personal password
 would then be in many ``settings.py`` files in many deployed Django
 projects, and I'm not the only administrator of these servers (and even
 if I were, I wouldn't know when I would invite another one). So I
-created another user (subaccount in runbox.com parlance),
+created another user (subaccount in Runbox parlance),
 "smarthostclient", which I use for that purpose.
 
 There are three ports used for sending email: 25, 465, and 587. The
@@ -121,16 +121,16 @@ then they continue with encryption. Obviously this is done before
 authentication, which requires the password to be transmitted.
 
 There are thus two methods to start encryption; one is implicit and the
-other one is explicit. When you connect to port 465, which is always
-supposed to be encrypted, the encryption starts implicitly. When you
-connect to port 587, the two peers (the client and the server) start
-talking unencrypted, and at some point the client explicitly tells the
-server "I want to continue with encryption". Computer people often use
-"SSL" for implicit encryption and "TLS" for explicit, however this is
-inaccurate; SSL and TLS are encryption protocols, and do not refer to
-the method used to initiate them; you could have implicit TLS or
-explicit SSL. Django uses this inaccurate parlance in its settings,
-where EMAIL_USE_TLS_ and EMAIL_USE_SSL_ are used to specify whether,
+other one is explicit. When you connect to port 465, which always works
+encrypted, the encryption starts implicitly. When you connect to port
+587, the two peers (the client and the server) start talking
+unencrypted, and at some point the client explicitly tells the server "I
+want to continue with encryption". Computer people often use "SSL" for
+implicit encryption and "TLS" for explicit, however this is inaccurate;
+SSL and TLS are encryption protocols, and do not refer to the method
+used to initiate them; you could have implicit TLS or explicit SSL.
+Django uses this inaccurate parlance in its settings, where
+EMAIL_USE_TLS_ and EMAIL_USE_SSL_ are used to specify whether,
 respectively, the connection will use explicit or implicit encryption.
 ``EMAIL_USE_TLS = True`` should be used with ``EMAIL_PORT = 587``, and
 ``EMAIL_USE_SSL = True`` with ``EMAIL_PORT = 465``.
@@ -153,6 +153,38 @@ And enter these commands::
     admin_emails = [x[1] for x in settings.ADMINS]
     send_mail("Test1557", "Hello", settings.SERVER_EMAIL,
               admin_emails)
+
+If something goes wrong, ``send_mail`` will raise an exception;
+otherwise you should receive the email.
+
+Because of spam, mail servers are often very picky about which emails
+they will accept. It's possible that even if your smarthost accepts the
+email, the next mail server may refuse it. For example, I made some
+experiments using ``from_email='noreply@example.com'``, ``EMAIL_HOST =
+'mail.runbox.com'``, and recipient anthony@itia.ntua.gr (an old email
+address of mine). In that case, Runbox accepted the email and
+subsequently attempted to deliver it to the mail server of ntua.gr,
+which rejected it because it didn't like the sender
+(noreply@example.com; I literally used "example.com", and ntua.gr didn't
+like that domain). When something like this happens, the test we made
+above with ``send_mail`` will appear to work, because ``send_mail``
+manages to deliver the email to the smarthost, and the error occurs
+after that; not only will we never receive the email, but it is also
+likely that we will not receive the failure notification (the returned
+email), so it's often hard to know what went wrong and we need to guess.
+
+One thing you can do to lessen the probability of error is to make sure
+that the recipient (or at least one of the recipients) has an email
+address served by the provider who provides the smarthost. In my case,
+the smarthost is ``mail.runbox.com``, and the recipient is
+antonis@antonischristofides.com, and the email for domain
+antonischristofides.com is served by Runbox. It is unlikely that
+``mail.runbox.com`` would accept an email addressed to
+antonis@antonischristofides.com if another Runbox server were to
+subsequently refuse it. If something like this happened, I believe it
+would be a configuration error on behalf of Runbox. But it's very normal
+that ``mail.runbox.com`` will accept an email which will subsequently be
+refused by ntua.gr or Gmail or another downstream provider.
 
 .. _SERVER_EMAIL: https://docs.djangoproject.com/en/1.10/ref/settings/#server-email
 .. _DEFAULT_FROM_EMAIL: https://docs.djangoproject.com/en/1.10/ref/settings/#default-from-email
@@ -183,35 +215,27 @@ forget to rename the template file back to what it was. By the time you
 finish doing that, you should have received the email with the full
 trace.
 
-Advanced email
---------------
+Using a local mail server
+-------------------------
 
-I told you a small lie. I said I don't maintain mail servers any more.
-Actually I do install exim or postfix locally on my Django servers and
-configure Django to use it. I use ``EMAIL_HOST = 'localhost'`` and
-Django submits the email to the locally installed mail server, which
-subsequently connects to another mail server and submits the email,
-exactly as Django does when we configure it like we did in the preceding
-sections. It's not a big lie because it's not an installation of a fully
-functional mail server that can send and receive email; it's a partially
-working server that we call a "satellite".
-
-If you are satisfied with what we did so far, it's fine to skip this
-section if you are in a hurry. However, there are three reasons why
-installing a local mail server is better:
+Usually I don't configure Django to deliver to the smarthost; instead, I
+install a mail server locally, have Django deliver to the local mail
+server, and configure the local mail server to send the emails to the
+smarthost.  If you are satisfied with what we did so far, it's fine to
+skip this section if you are in a hurry. However, there are three
+reasons why installing a local mail server is better:
 
  1. While Django attempts to send an error email, if something goes
     wrong, it fails silently. This behaviour is appropriate (the system
-    is in error, it attempts to email its administration with the
-    exception, but sending the email also results in an error; what else
-    could be done?). Suppose, however, that when you try to verify that
+    is in error, it attempts to email its administrator with the
+    exception, but sending the email also results in an error; can't do
+    much more).  Suppose, however, that when you try to verify that
     error emails get sent, as in the previous section, you find out they
     don't work. What has gone wrong? Nothing is written in any log.
     Intercepting the communication with ``ngrep`` won't work either,
     because it's usually encrypted. If you use a locally installed mail
-    server, Django's communication with it will be unencrypted, and any
-    subsequent errors will be logged by the mail server and you will be
-    able to look at the logs.
+    server, you will at least be able to look at the local mail server's
+    logs.
 
  2. Sending an error email might take long. The communication line might
     be slow, or a firewall or the DNS could be misbehaving, and it might
@@ -233,114 +257,93 @@ installing a local mail server is better:
     ``cron`` always works with a local mail server. If you don't install
     a local mail server, you will miss these error messages.
  
-So, install postfix like this:
+While the most popular mail servers for Debian and Ubuntu are exim and
+postfix, I don't recommend them. Mail servers are strange beasts. They
+have large and tricky configuration files, because they can do a hell of
+things. You will have a hard time understanding the necessary
+configuration (which is buried under a hell of other configuration), and
+if something goes wrong you will have a hard time debugging it.  I also
+see no great educational value in learning it. I used to run mail
+servers for years but I've got ridden of all of them; it's not worth the
+effort when I can do the same thing at Runbox for € 30 per year. 
+
+Instead, we are going to use ``dma``. It's a small mail server that only
+does what we want; it collects messages in a queue, and sends them to a
+smarthost. It is much easier to configure than the real thing. Install
+it like this:
 
 .. code-block:: bash
 
-   apt-get install postfix
+   apt-get install dma
 
-This will ask you a few questions, to which you should answer thus:
-
-**General type of mail configuration**
-   Satellite system. This means that it will not be receiving emails, it
-   will only be sending emails, and it will be sending them all to a
-   single remote mail server.
+It will ask you a couple of questions:
 
 **System mail name**
    You should probably use $DOMAIN here. If that doesn't work, you can
    try to use the domain of your email address.
+**Smarthost**
+   This is the remote mail server, the smarthost, that is; the one we
+   had specified in Django's ``EMAIL_HOST``.
 
-**SMTP relay host**
-   This is the remote mail server, followed by a colon and the port,
-   such as ``mail.runbox.com:587``.
+Next, open ``/etc/dma/dma.conf`` in an editor, and uncomment or edit
+these directives::
 
-**Root and postmaster mail recipient**
-   Specify your own email address. If ``cron`` attempts to email the
-   "root" user about a problem, postfix will treat "root" as an alias
-   for your email address.
+   PORT 587
+   AUTHPATH /etc/dma/auth.conf
+   SECURETRANSFER
+   STARTTLS
 
-**Other destinations to accept mail for**
-   This is redundant, your answer doesn't matter.
+(If your smarthost uses implicit encryption, you need to specify ``PORT
+465`` instead, and omit the ``STARTTLS``.)
 
-**Force synchronous updates**
-   No.
+Next, open ``/etc/dma/auth.conf`` and add this line::
 
-**Local networks**
-   Leave the default, which should include the local addresses for IPv4
-   and IPv6.
+   $EMAIL_USER|$EMAIL_HOST:$EMAIL_PASSWORD
 
-**Mailbox size limit**
-   This is redundant, your answer doesn't matter. Leave it at zero.
+(These are placeholders of course, which you need to replace.)
 
-**Local address extensions**
-   Likewise. Leave the default.
+Finally, open ``/etc/aliases`` and add this line::
 
-**Internet protocols to use**
-   All
+   root: $ADMIN_EMAIL_ADDRESS
 
-If you get anything wrong, you can reconfigure it like this:
+Let's test it to see if it works:
 
 .. code-block:: bash
 
-   dpkg-reconfigure postfix
+   sendmail $ADMIN_EMAIL_ADDRESS
 
-We are not complete yet, as the configuration so far has only told
-postfix to use port 587 (or possibly 465), but we have not specified
-that we need encryption and authentication. For this, add the following
-at the end of ``/etc/postfix/main.cf``:
+This will pause for input. Type a short email message, and end it with a
+line that contains a single fullstop. Check ``/var/log/mail.log`` to
+verify it has been delivered to the smarthost (if it says "delivery
+successful" it's OK, even if it's preceded by a warning message about
+the authentication mechanism), and verify that you have received it.
 
-.. code-block:: ini
-
-   smtp_tls_security_level = encrypt
-
-   smtp_sasl_auth_enable = yes
-   smtp_sasl_security_options = noanonymous
-   smtp_sasl_password_maps = hash:/etc/postfix/smtp_auth
-
-The first directive, on its own, tells it to use explicit encryption. If
-you use port 465, you need to add this to enable implicit encryption:
-
-.. code-block:: ini
-
-   smtp_tls_wrappermode = yes
-
-The directives beginning with ``smtp_sasl`` configure authentication.
-The first two enable authentication, and the third one specifies that
-the username and password can be found in ``/etc/postfix/smtp_auth``.
-Create that file with the following contents::
-
-   $EMAIL_HOST $EMAIL_HOST_USER:$EMAIL_HOST_PASSWORD
-
-An example is this::
-
-   mail.runbox.com antonis%antonischristofides.com:topsecret
-
-Because the file contains your password, you should protect it:
+The next step is to configure Django. You might think that we would
+set ``EMAIL_HOST = 'localhost'`` and ``EMAIL_PORT = 25``, but this is
+not what we will do. ``mda`` does not listen on port 25 or on any other
+port. The only way to send emails with it is by using the ``sendmail``
+command. Traditionally this has been the easiest and most widely
+available way to send emails in Unix, and it is also what ``cron`` uses.
+We will install a Django email backend that sends emails in the same
+way.
 
 .. code-block:: bash
 
-   chmod u=rw,g=r,o= /etc/postfix/smtp_auth
+    /opt/$DJANGO_PROJECT/venv/bin/pip install django-sendmail-backend
 
-Finally, you need to, let's say, "compile" that file:
+The only Django configuration we need this::
 
-.. code-block:: bash
+   EMAIL_BACKEND = 'django_sendmail_backend.backends.EmailBackend'
 
-   postmap /etc/postfix/smtp_auth
-
-This will create a binary file ``/etc/postfix/smtp_auth.db``, which is
-what postfix will be using during actual operation. After you did all
-that, postfix should be working.
-
-Django configuration is now much simpler::
-
-    EMAIL_HOST = 'localhost'
-    EMAIL_PORT = 25
-
-You don't need to specify ``EMAIL_USE_TLS``, ``EMAIL_HOST_USER`` or
-``EMAIL_HOST_PASSWORD``, because the connection between Django and the
-postfix will be unencrypted and without authentication. If anything is
-not working, you can check postfix's log files, ``/var/log/mail.log``
-and ``/var/log/mail.err``.
+The ``dma`` configuration should have been obvious, except for the
+``/etc/aliases`` file. This is not dma-specific, it is also used by
+exim, postfix, and most other mail servers. As its name implies, it
+specifies aliases for email addresses. If ``cron`` decides it needs to
+send an email, the recipient will most likely be a mere ``root``. The
+line we added specifies that ``root`` should be translated to your
+actual email address. For Django, ``/etc/aliases`` doesn't matter, since
+Django will get the recipient email address from the ``ADMINS`` and
+``MANAGERS`` settings.
 
 Secret key
 ----------
@@ -373,3 +376,21 @@ Recompile your settings
 
 Chapter summary
 ---------------
+
+TODO: While you could install exim or postfix and make your machine a mail
+server as well, I don't recommend it. Running a mail server can easily
+fill in a book by itself.
+I used to run mail servers for years but I've
+got ridden of all of them; it's not worth the effort when I can do the
+same thing at runbox.com for € 30 per year. 
+
+I told you a small lie. I said I don't maintain mail servers any more.
+Actually I do install exim or postfix locally on my Django servers and
+configure Django to use it. I use ``EMAIL_HOST = 'localhost'`` and
+Django submits the email to the locally installed mail server, which
+subsequently connects to another mail server and submits the email,
+exactly as Django does when we configure it like we did in the preceding
+sections. It's not a big lie because it's not an installation of a fully
+functional mail server that can send and receive email; it's a partially
+working server that we call a "satellite".
+
