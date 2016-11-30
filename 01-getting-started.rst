@@ -13,7 +13,7 @@ Before continuing, please make sure you have the necessary background:
  * You understand **virtualenv**.
  * You can create a **Debian** or **Ubuntu** server, login to it with
    ssh, use scp to copy files, and use some basic commands, including
-   ``sudo`` and ``apt-get update/upgrade/install/remove``.
+   ``sudo`` and ``apt update/upgrade/install/remove``.
  * You can use **DNS** to point your domain name to your server.
  * You have chosen between **Apache** and **nginx**.
 
@@ -45,7 +45,7 @@ following:
 
 .. code-block:: bash
 
-   apt-get install git python3 virtualenvwrapper
+   apt install git python3 virtualenvwrapper
    git clone $DJANGO_PROJECT_REPOSITORY
    cd $DJANGO_PROJECT
    mkvirtualenv --system-site-packages $DJANGO_PROJECT

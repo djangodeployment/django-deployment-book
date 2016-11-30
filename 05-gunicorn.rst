@@ -29,9 +29,9 @@ haven't met any such compelling reason.
 Installing and running Gunicorn
 -------------------------------
 
-We will install Gunicorn with ``pip`` rather than with ``apt-get``,
-because the packaged Gunicorn (both in Debian 8 and Ubuntu 16.04)
-supports only Python 2.
+We will install Gunicorn with ``pip`` rather than with ``apt``, because
+the packaged Gunicorn (both in Debian 8 and Ubuntu 16.04) supports only
+Python 2.
 
 .. code-block:: bash
 
@@ -208,7 +208,7 @@ this, we will configure it as a service in systemd.
    systemd is relatively a novelty. It exists only in Debian 8 and
    later, and Ubuntu 15.04 and later. In older systems you need to 
    start Gunicorn in another way. I recommend supervisor_, which you can
-   install with ``apt-get install supervisor``.
+   install with ``apt install supervisor``.
 
    .. _supervisor: http://supervisord.org/
 

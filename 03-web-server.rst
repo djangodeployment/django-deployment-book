@@ -19,7 +19,7 @@ Installing nginx
 
 Install nginx like this::
 
-    apt-get install nginx-light
+    apt install nginx-light
 
 .. note::
 
@@ -232,7 +232,7 @@ Installing Apache
 
 Install Apache like this::
 
-    apt-get install apache2
+    apt install apache2
 
 After you install, go to your web browser and visit
 http://$DOMAIN/. You should see Apache's welcome page.

@@ -19,9 +19,9 @@ else
 fi
 
 # Update and install stuff (TODO: put it in the book)
-apt-get update
-apt-get -y upgrade
-apt-get install -y git python3 virtualenvwrapper
+apt update
+apt upgrade -y
+apt install -y git python3 virtualenvwrapper
 
 #
 # USERS AND DIRECTORIES
@@ -79,7 +79,7 @@ chmod u=rwx,g=rx,o= /etc/opt/$DJANGO_PROJECT
 
 if [ $WEB_SERVER = 'nginx' ]; then
 	# Installing nginx
-	apt-get install -y nginx-light
+	apt install -y nginx-light
 
 	# Configuring nginx to serve the domain
 	cat <<-EOF1 >/etc/nginx/sites-available/$DOMAIN
@@ -128,7 +128,7 @@ if [ $WEB_SERVER = 'nginx' ]; then
 	service nginx reload
 else
 	# Installing apache
-	apt-get install -y apache2
+	apt install -y apache2
 
 	# Configuring apache to serve the domain
 	cat <<-EOF1 >/etc/apache2/sites-available/$DOMAIN.conf
