@@ -620,7 +620,8 @@ If you decide to use a local mail server:
 
    .. code-block:: python
 
-      EMAIL_BACKEND = 'django_sendmail_backend.backends.EmailBackend'
+      EMAIL_BACKEND = 'django_sendmail_backend.backends.' \
+                      'EmailBackend'
 
  * Make sure ``/etc/dma/dma.conf`` has these contents::
 
