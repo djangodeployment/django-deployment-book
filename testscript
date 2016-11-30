@@ -267,23 +267,81 @@ service $DJANGO_PROJECT start
 # SETTINGS
 #
 
-# Email
-cat <<-EOF1 >>/etc/opt/$DJANGO_PROJECT/settings.py
+cat <<-EOF1 >/etc/opt/$DJANGO_PROJECT/settings.py
+	from $DJANGO_PROJECT.settings.base import *
+
+	DEBUG = False
+	ALLOWED_HOSTS = ['$DOMAIN', 'www.$DOMAIN']
+	DATABASES = {
+	    'default': {
+	        'ENGINE': 'django.db.backends.sqlite3',
+	        'NAME': '/var/opt/$DJANGO_PROJECT/$DJANGO_PROJECT.db',
+	    }
+	}
+
 	SERVER_EMAIL = 'noreply@$DOMAIN'
 	DEFAULT_FROM_EMAIL = 'noreply@$DOMAIN'
 	ADMINS = [
 	    ('$ADMIN_NAME', '$ADMIN_EMAIL_ADDRESS'),
 	]
 	MANAGERS = ADMINS
+	EMAIL_BACKEND = 'django_sendmail_backend.backends.EmailBackend'
 
-	EMAIL_HOST = '$EMAIL_HOST'
-	EMAIL_HOST_USER = '$EMAIL_HOST_USER'
-	EMAIL_HOST_PASSWORD = '$EMAIL_HOST_PASSWORD'
-	EMAIL_PORT = 587
-	EMAIL_USE_TLS = True
+	LOGGING = {
+	    'version': 1,
+	    'disable_existing_loggers': False,
+	    'formatters': {
+	        'default': {
+	            'format': '[%(asctime)s] %(levelname)s: '
+	                      '%(message)s',
+	        }
+	    },
+	    'handlers': {
+	        'file': {
+	            'class': 'logging.handlers.'
+	                     'TimedRotatingFileHandler',
+	            'filename': '/var/log/$DJANGO_PROJECT/'
+	                        '$DJANGO_PROJECT.log',
+	            'when': 'midnight',
+	            'backupCount': 60,
+	            'formatter': 'default',
+	        },
+	    },
+	    'root': {
+	        'handlers': ['file'],
+	        'level': 'INFO',
+	    },
+	}
 
-	DEBUG = False
+	CACHES = {
+	    'default': {
+	        'BACKEND': 'django.core.cache.backends.filebased.'
+	                   'FileBasedCache',
+	        'LOCATION': '/var/cache/$DJANGO_PROJECT/cache',
+	    }
+	}
 EOF1
-/opt/$DJANGO_PROJECT/venv/bin/python -m compileall \
-	/etc/opt/$DJANGO_PROJECT
-service $DJANGO_PROJECT restart
+mkdir -p /var/cache/$DJANGO_PROJECT/cache
+chown $DJANGO_USER /var/cache/$DJANGO_PROJECT/cache
+cat <<-EOF1 >/usr/local/sbin/restart-$DJANGO_PROJECT
+	#!/bin/bash
+	set -e
+	/opt/$DJANGO_PROJECT/venv/bin/python -m compileall -q \
+	     -x /opt/$DJANGO_PROJECT/venv/ /opt/$DJANGO_PROJECT \
+	     /etc/opt/$DJANGO_PROJECT
+	service $DJANGO_PROJECT restart
+EOF1
+chmod ugo+x /usr/local/sbin/restart-$DJANGO_PROJECT
+/opt/$DJANGO_PROJECT/venv/bin/pip install django-sendmail-backend
+DEBIAN_FRONTEND=noninteractive apt install -y -q dma
+cat <<-EOF1 >/etc/dma/dma.conf
+	SMARTHOST $EMAIL_HOST
+	PORT 587
+	AUTHPATH /etc/dma/auth.conf
+	SECURETRANSFER
+	STARTTLS
+	MAILNAME /etc/mailname
+EOF1
+echo "$EMAIL_HOST_USER|$EMAIL_HOST:$EMAIL_HOST_PASSWORD" >/etc/dma/auth.conf
+echo "$DOMAIN" >/etc/mailname
+restart-$DJANGO_PROJECT

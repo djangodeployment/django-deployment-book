@@ -1,5 +1,5 @@
-Settings
-========
+Django production settings
+==========================
 
 So far the only thing we've done in our production settings was to setup
 ``ALLOWED_HOSTS``. We still have some work to do. It is absolutely
@@ -274,7 +274,7 @@ it like this:
 
 .. code-block:: bash
 
-   apt-get install dma
+   apt install dma
 
 It will ask you a couple of questions:
 
@@ -318,20 +318,23 @@ verify it has been delivered to the smarthost (if it says "delivery
 successful" it's OK, even if it's preceded by a warning message about
 the authentication mechanism), and verify that you have received it.
 
-The next step is to configure Django. You might think that we would
-set ``EMAIL_HOST = 'localhost'`` and ``EMAIL_PORT = 25``, but this is
-not what we will do. ``mda`` does not listen on port 25 or on any other
+The next step is to configure Django. You might think that we would set
+``EMAIL_HOST = 'localhost'`` and ``EMAIL_PORT = 25``, but this is not
+what we will do. ``dma`` does not listen on port 25 or on any other
 port. The only way to send emails with it is by using the ``sendmail``
 command. Traditionally this has been the easiest and most widely
 available way to send emails in Unix, and it is also what ``cron`` uses.
-We will install a Django email backend that sends emails in the same
-way.
+(In the old times, when ``sendmail`` was the only existing mail server,
+the practice of using the ``sendmail`` command was standardized, so
+today all mail servers create a ``sendmail`` command when they are
+installed, which is usually a symbolic link to something else).  We will
+install a Django email backend that sends emails in the same way.
 
 .. code-block:: bash
 
     /opt/$DJANGO_PROJECT/venv/bin/pip install django-sendmail-backend
 
-The only Django configuration we need this::
+The only Django configuration we need is this::
 
    EMAIL_BACKEND = 'django_sendmail_backend.backends.EmailBackend'
 
@@ -349,8 +352,8 @@ Secret key
 ----------
 
 Django uses the SECRET_KEY_ in several cases, for example, when
-digitally signing sessions in cookies. If it leaks, then attackers might
-be able to compromise your system. You should not use the ``SECRET_KEY``
+digitally signing sessions in cookies. If it leaks, attackers might be
+able to compromise your system. You should not use the ``SECRET_KEY``
 you use in development, because that one is easy to leak, and because
 many developers often have access to it, whereas they should not have
 access to the production ``SECRET_KEY``.
@@ -368,29 +371,268 @@ You can create a secret key in this way::
 Logging
 -------
 
+Even if your Django apps do no logging, they eventually will.  At some
+point one of your users is going to cause an error which you will be
+unable to reproduce in the development environment, so you will
+introduce some logging calls.  It makes sense to configure logging so
+that it is ready for that time. You need a configuration that will write
+log messages in ``/var/log/$DJANGO_PROJECT/$DJANGO_PROJECT.log``, and
+here it is:
+
+.. code-block:: python
+
+    LOGGING = {
+        'version': 1,
+        'disable_existing_loggers': False,
+        'formatters': {
+            'default': {
+                'format': '[%(asctime)s] %(levelname)s: '
+                          '%(message)s',
+            }
+        },
+        'handlers': {
+            'file': {
+                'class': 'logging.handlers.'
+                         'TimedRotatingFileHandler',
+                'filename': '/var/log/$DJANGO_PROJECT/'
+                            '$DJANGO_PROJECT.log',
+                'when': 'midnight',
+                'backupCount': 60,
+                'formatter': 'default',
+            },
+        },
+        'root': {
+            'handlers': ['file'],
+            'level': 'INFO',
+        },
+    }
+
+Here is the meaning of the various items:
+
+**version**
+   This is reserved for the future; for now, it should always be 1.
+**disable_existing_loggers**
+   Django already has a default logging configuration. If
+   ``disable_existing_loggers`` is ``True`` (the default), then this
+   configuration will override Django's default, otherwise it will work
+   in addition to the default. We really want Django's default
+   configuration, which is to email critical errors to the
+   administrators.
+**root**
+   This defines the root logger. You can specify very complicated
+   logging schemes, where different loggers will be logging using
+   different handlers and different formatters. However, as long as our
+   system is small, we only need to specify a single logger, the root
+   logger, which uses a single handler (the "file" handler) with a
+   single formatter (the "default" formatter). In this example I have
+   specified ``'level': 'INFO',`` which means the logger will ignore
+   messages with a lower priority (the only lower priority is ``DEBUG``,
+   and the higher priorities are ``INFO``, ``WARNING``, ``ERROR``
+   and ``CRITICAL``). You can change this as needed, however ``INFO`` is
+   reasonable to begin with.
+**handlers**
+   Here we define the "file" handler, whose class is
+   ``logging.TimedRotatingFileHandler``. This essentially logs to a
+   file, but it has the added benefit that each midnight it starts a
+   new log file, renames the old one, and deletes log files older than
+   60 days. In this way it is very unlikely that your disk will fill up
+   because the growing log files escape your attention.
+**formatters**
+   This defines a formatter named "default". In a system where I'm using
+   this logging configuration, I have this code:
+
+   .. code-block:: python
+
+      import logging
+
+      # ...
+
+      logging.info('Notifying user {} about the agrifields of '
+                   'user {}'.format(user, owner))
+
+   and it produces this line in the log file::
+
+      [2016-11-29 04:40:02,880] INFO: Notifying user aptiko about the agrifields of user aptiko
+
 Caching
 -------
+
+The only other setting I expect you to set to a different value from
+development is ``CACHES``. How you will set it depends on your needs. I
+usually want my caches to persist across reboots, so I specify this:
+
+.. code-block:: python
+
+   CACHES = {
+       'default': {
+           'BACKEND': 'django.core.cache.backends.filebased.'
+                      'FileBasedCache',
+           'LOCATION': '/var/cache/$DJANGO_PROJECT/cache',
+       }
+   }
+
+You also need to create the directory and give it the necessary
+permissions:
+
+.. code-block:: bash
+
+   mkdir /var/cache/$DJANGO_PROJECT/cache
+   chown $DJANGO_USER /var/cache/$DJANGO_PROJECT/cache
 
 Recompile your settings
 -----------------------
 
+Remember that Django runs as $DJANGO_USER and does not (and should not)
+have permission to write in directory ``/etc/opt/$DJANGO_PROJECT``,
+which is owned by root. Therefore it can't write the Python 2 compiled
+file ``settings.pyc``, or the Python 3 compiled files directory
+``__pycache__``. In theory you should be compiling it each time you make
+a change to your settings:
+
+.. code-block:: bash
+
+    /opt/$DJANGO_PROJECT/venv/bin/python -m compileall \
+        /etc/opt/$DJANGO_PROJECT
+
+Of course it's not possible to remember to do this every single time you
+change something in the settings. There are two solutions to this. The
+first solution, which is fine, is to ignore the problem. If the compiled
+file is absent or outdated, Python will compile the source file on the
+spot. This will happen whenever each gunicorn worker starts, which is
+only when you start or restart gunicorn, and it costs less than 1 ms.
+It's really negligible.
+
+The second solution is to create a script
+``/usr/local/sbin/restart-$DJANGO_PROJECT``, with the following
+contents:
+
+.. code-block:: bash
+
+   #!/bin/bash
+   set -e
+   /opt/$DJANGO_PROJECT/venv/bin/python -m compileall -q \
+        -x /opt/$DJANGO_PROJECT/venv/ /opt/$DJANGO_PROJECT \
+        /etc/opt/$DJANGO_PROJECT
+   service $DJANGO_PROJECT restart
+
+You must make that script executable:
+
+.. code-block:: bash
+
+   chmod ugo+x /usr/local/sbin/restart-$DJANGO_PROJECT
+
+This means that, for both the owner (u), group (g), and others (o),
+execute permission (x) will be added. You might object that we don't
+want users other than root to be able to recompile the Python files or
+to restart the gunicorn service. The answer is that they won't be able.
+They will be able to execute the script, but when the script arrives at
+the point where it compiles the Python files, they will be denied
+permission to write the compiled Python files to the directory; and if
+the script ever arrives at the last line, again systemd will deny to
+restart the service. Making a script non-executable doesn't achieve
+anything security-wise; a malicious user could simply copy it and make
+the copy executable.
+
+From now on, whenever you want to restart gunicorn, instead of ``service
+$DJANGO_PROJECT restart``, you can be using ``restart-$DJANGO_PROJECT``,
+which will run the above script. The ``set -e`` command tells bash to
+stop executing the script when an error occurs, and the ``-q`` parameter
+to ``compileall`` tells to not print the list of files compiled.
+
 Chapter summary
 ---------------
 
-TODO: While you could install exim or postfix and make your machine a mail
-server as well, I don't recommend it. Running a mail server can easily
-fill in a book by itself.
-I used to run mail servers for years but I've
-got ridden of all of them; it's not worth the effort when I can do the
-same thing at runbox.com for € 30 per year. 
+The summary of this chapter can best be given as the whole
+``settings.py`` file:
 
-I told you a small lie. I said I don't maintain mail servers any more.
-Actually I do install exim or postfix locally on my Django servers and
-configure Django to use it. I use ``EMAIL_HOST = 'localhost'`` and
-Django submits the email to the locally installed mail server, which
-subsequently connects to another mail server and submits the email,
-exactly as Django does when we configure it like we did in the preceding
-sections. It's not a big lie because it's not an installation of a fully
-functional mail server that can send and receive email; it's a partially
-working server that we call a "satellite".
+.. code-block:: python
 
+    from DJANGO_PROJECT.settings.base import *
+
+    DEBUG = False
+    ALLOWED_HOSTS = ['$DOMAIN', 'www.$DOMAIN']
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.sqlite3',
+            'NAME': '/var/opt/$DJANGO_PROJECT/$DJANGO_PROJECT.db',
+        }
+    }
+
+    SERVER_EMAIL = 'noreply@$DOMAIN'
+    DEFAULT_FROM_EMAIL = 'noreply@$DOMAIN'
+    ADMINS = [
+        ('$ADMIN_NAME', '$ADMIN_EMAIL_ADDRESS'),
+    ]
+    MANAGERS = ADMINS
+    EMAIL_HOST = '$EMAIL_HOST'
+    EMAIL_HOST_USER = '$EMAIL_HOST_USER'
+    EMAIL_HOST_PASSWORD = '$EMAIL_HOST_PASSWORD'
+    EMAIL_PORT = 587
+    EMAIL_USE_TLS = True
+
+    LOGGING = {
+        'version': 1,
+        'disable_existing_loggers': False,
+        'formatters': {
+            'default': {
+                'format': '[%(asctime)s] %(levelname)s: '
+                          '%(message)s',
+            }
+        },
+        'handlers': {
+            'file': {
+                'class': 'logging.TimedRotatingFileHandler',
+                'filename': '/var/log/$DJANGO_PROJECT/'
+                            '$DJANGO_PROJECT.log',
+                'when': 'midnight',
+                'backupCount': 60,
+                'formatter': 'default',
+            },
+        },
+        'root': {
+            'handlers': ['file'],
+            'level': 'INFO',
+        },
+    }
+
+   CACHES = {
+       'default': {
+           'BACKEND': 'django.core.cache.backends.filebased.'
+                      'FileBasedCache',
+           'LOCATION': '/var/cache/$DJANGO_PROJECT/cache',
+       }
+   }
+
+Also, create the cache directory:
+
+.. code-block:: bash
+
+   mkdir /var/cache/$DJANGO_PROJECT/cache
+   chown $DJANGO_USER /var/cache/$DJANGO_PROJECT/cache
+
+If you decide to use a local mail server:
+  
+ * ``apt install dma`` and (in the virtualenv) ``pip install
+   django-sendmail-backend``.
+
+ * Remove all settings starting with ``EMAIL_`` from settings, and
+   specify this instead:
+
+   .. code-block:: python
+
+      EMAIL_BACKEND = 'django_sendmail_backend.backends.EmailBackend'
+
+ * Make sure ``/etc/dma/dma.conf`` has these contents::
+
+      SMARTHOST $EMAIL_HOST
+      PORT 587
+      AUTHPATH /etc/dma/auth.conf
+      SECURETRANSFER
+      STARTTLS
+      MAILNAME /etc/mailname
+
+   Also make sure ``/etc/dma/auth.conf`` has these contents::
+
+      $EMAIL_HOST_USER|$EMAIL_HOST:$EMAIL_HOST_PASSWORD
+
+   Finally, make sure ``/etc/mailname`` contains $DOMAIN.
