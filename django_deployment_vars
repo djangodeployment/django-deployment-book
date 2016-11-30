@@ -6,5 +6,5 @@ WEB_SERVER=apache
 ADMIN_NAME=Antonis
 ADMIN_EMAIL_ADDRESS=antonis@djangodeployment.com
 EMAIL_HOST=mail.runbox.com
-EMAIL_HOST_USER=smarthostclient%djangodeployment.com
+EMAIL_HOST_USER=smarthostclient%antonischristofides.com
 EMAIL_HOST_PASSWORD=topsecret
