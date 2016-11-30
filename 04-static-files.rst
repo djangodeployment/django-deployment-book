@@ -19,8 +19,6 @@ Remember that after each change to your settings you need to recompile:
 
    /opt/$DJANGO_PROJECT/venv/bin/python -m compileall \
        /etc/opt/$DJANGO_PROJECT
-    chgrp -R $DJANGO_GROUP /etc/opt/$DJANGO_PROJECT/__pycache__ \
-       /etc/opt/$DJANGO_PROJECT/settings.pyc
 
 **Second**, create directory ``/var/cache/$DJANGO_PROJECT/static/``:
 

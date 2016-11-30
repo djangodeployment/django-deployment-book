@@ -273,43 +273,53 @@ contain it, and we can contain it if the compromising of an application
 does not result in the compromising of other applications. This is why
 we want to run each application in its own user and its own group.
 
-Here is how to harden the permissions of ``settings.py``:
+Here is how to make the contents of ``/etc/opt/$DJANGO_PROJECT``
+unreadable by other users:
 
 .. code-block:: bash
 
-   chgrp $DJANGO_GROUP /etc/opt/$DJANGO_PROJECT/settings.py
-   chmod u=rw,g=r,o= /etc/opt/$DJANGO_PROJECT/settings.py
+   chgrp $DJANGO_GROUP /etc/opt/$DJANGO_PROJECT
+   chmod u=rwx,g=rx,o= /etc/opt/$DJANGO_PROJECT
 
-What this does is make ``settings.py`` unreadable by users other than
-``root`` and ``$DJANGO_USER``. The file is owned by ``root``, and the
-first command above changes the group of the file to ``$DJANGO_GROUP``.
-The second command changes the permissions of the file so that:
+What this does is make the directory unreadable by users other than
+``root`` and ``$DJANGO_USER``. The directory is owned by ``root``, and
+the first command above changes the group of the directory to
+``$DJANGO_GROUP``.  The second command changes the permissions of the
+directory so that:
 
-**u=rw**
-   The owner has permission to read and write the file (the ``u`` in
-   ``u=rw`` stands for "user", but actually it means the "user who owns
-   the file"). The owner is ``root``.
-**g=r**
-   The group has permission to read the file. More precisely, users who
-   belong in that group have permission to read the file. The file's
-   group is ``$DJANGO_GROUP``. The only user in that group is
-   ``$DJANGO_USER``, so this adjustment applies only to that user.
+**u=rwx**
+   The owner has permission to read (rx) and write (w) the directory
+   (the ``u`` in ``u=rwx`` stands for "user", but actually it means the
+   "user who owns the directory"). The owner is ``root``.  Reading a
+   directory is denoted with ``rx`` rather than simply ``r``, where the
+   ``x`` stands for "search"; but giving a directory only one of the
+   ``r`` and ``x`` permissions is an edge case that I've seen only once
+   in my life. For practical purposes, when you want a directory to be
+   readable, you must specify both ``r`` and ``x``.  (This applies only
+   to directories; for files, the ``x`` is the permission to execute the
+   file as a program.)
+**g=rx**
+   The group has permission to read the directory. More precisely, users
+   who belong in that group have permission to read the directory. The
+   directory's group is ``$DJANGO_GROUP``. The only user in that group
+   is ``$DJANGO_USER``, so this adjustment applies only to that user.
 **o=**
-   Other users have no permission, they can't read or write the file.
+   Other users have no permission, they can't read or write to the
+   directory.
 
 You might have expected that it would have been easier to tell the
 system "I want ``root`` to be able to read and write, and
 ``$DJANGO_USER`` to be able to only read". Instead, we did something
 much more complicated: we made ``$DJANGO_USER`` belong to a
-``$DJANGO_GROUP``, and we made the file readable by that group, thus
-indirectly readable by the user. The reason we did it this way is an
-accident of history. In Unix there has traditionally been no way to say
-"I want ``root`` to be able to read and write, and ``$DJANGO_USER`` to
-be able to only read". In many modern Unixes, including Linux, it is
+``$DJANGO_GROUP``, and we made the directory readable by that group,
+thus indirectly readable by the user. The reason we did it this way is
+an accident of history. In Unix there has traditionally been no way to
+say "I want ``root`` to be able to read and write, and ``$DJANGO_USER``
+to be able to only read". In many modern Unixes, including Linux, it is
 possible using Access Control Lists, but this is a feature added later,
-it is not the same in all Unixes, and its syntax is harder to use. The
-way we use here works the same in FreeBSD, HP-UX, and all other Unixes,
-and it is common practice everywhere.
+it does not work the same in all Unixes, and its syntax is harder to
+use. The way we use here works the same in FreeBSD, HP-UX, and all other
+Unixes, and it is common practice everywhere.
 
 Finally, we need to **compile** the settings file. Your settings file
 and the ``/etc/opt/$DJANGO_PROJECT`` directory is owned by root, and, as
@@ -320,21 +330,31 @@ compiled version, so we pre-compile it as root:
 
     /opt/$DJANGO_PROJECT/venv/bin/python -m compileall \
         /etc/opt/$DJANGO_PROJECT
-    chgrp -R $DJANGO_GROUP /etc/opt/$DJANGO_PROJECT/__pycache__
 
-When Python compiles a ``.py`` file, it gives the ``.pyc`` file the same
-mode as the original file, so in our case ``settings.pyc`` will be
-readable and writeable by the owner, readable by the group, and
-non-accessible by others. However, Python does not set the same owner
-and group to the ``.pyc`` file as in the original, which is why we need
-to change the group. The above ``chgrp`` command works with Python 3,
-and recursively modifies the group of directory
-``/etc/opt/$DJANGO_PROJECT/__pycache__`` and of the files it contains.
-In Python 2, use this instead:
+Compiled files are the reason we changed the permissions of the
+directory and not the permissions of ``settings.py``. When Python writes
+the compiled files (which also contain the sensitive information), it
+does not give them the permissions we want, which means we'd need to be
+chgrping and chmoding each time we compile. By removing read permissions
+from the directory, we make sure that none of the files in the directory
+is readable; in Unix, in order to read file
+``/etc/opt/$DJANGO_PROJECT/settings.py``, you must have permission to
+read ``/`` (the root directory), ``/etc``, ``/etc/opt``,
+``/etc/opt/$DJANGO_PROJECT``, and
+``/etc/opt/$DJANGO_PROJECT/settings.py``.
+
+You can check the permissions of a directory with the ``-d`` option of
+``ls``, like this:
 
 .. code-block:: bash
 
-    chgrp -R $DJANGO_GROUP /etc/opt/$DJANGO_PROJECT/settings.pyc
+   ls -lhd /
+   ls -lhd /etc
+   ls -lhd /etc/opt
+   ls -lhd /etc/opt/$DJANGO_PROJECT
+
+(In the above commands, if you don't use the ``-d`` option it will show
+the contents of the directory instead of the directory itself.)
 
 Running the Django server
 -------------------------
@@ -421,13 +441,11 @@ Chapter summary
    name as your Django project, owned by the system user you created. If
    you are using SQLite, the database file will go in there.
  * Put your settings file in a subdirectory of ``/etc/opt`` with the
-   same name as your Django project, with all files owned by root. Set
-   ``settings.py`` to belong to the system group you created, and to not
-   be readable by other users.
+   same name as your Django project, whose user is root, whose group is
+   the system group you created, that is readable by the group and
+   writeable by root, and whose contents belong to root.
  * Precompile the files in ``/opt/$DJANGO_PROJECT`` and
-   ``/etc/opt/$DJANGO_PROJECT``. Change the group of the compiled
-   configuration files to the system group you created and verify it's
-   not readable by other users.
+   ``/etc/opt/$DJANGO_PROJECT``.
  * Run ``manage.py`` as the system user you created, after setting the
    environment variable
    ``PYTHONPATH=/etc/opt/$DJANGO_PROJECT:/opt/$DJANGO_PROJECT`` and

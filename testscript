@@ -68,15 +68,10 @@ cat <<-EOF1 >/etc/opt/$DJANGO_PROJECT/settings.py
 	    }
 	}
 EOF1
-chgrp $DJANGO_GROUP /etc/opt/$DJANGO_PROJECT/settings.py
-chmod u=rw,g=r,o= /etc/opt/$DJANGO_PROJECT/settings.py
+chgrp $DJANGO_GROUP /etc/opt/$DJANGO_PROJECT
+chmod u=rwx,g=rx,o= /etc/opt/$DJANGO_PROJECT
 /opt/$DJANGO_PROJECT/venv/bin/python -m compileall \
 	/etc/opt/$DJANGO_PROJECT
-if [ $PYTHON = "2" ]; then
-	chgrp -R $DJANGO_GROUP /etc/opt/$DJANGO_PROJECT/settings.pyc
-else
-	chgrp -R $DJANGO_GROUP /etc/opt/$DJANGO_PROJECT/__pycache__
-fi
 
 #
 # THE WEB SERVER
@@ -195,11 +190,6 @@ cat <<-EOF1 >/etc/opt/$DJANGO_PROJECT/settings.py
 EOF1
 /opt/$DJANGO_PROJECT/venv/bin/python -m compileall \
 	/etc/opt/$DJANGO_PROJECT
-if [ $PYTHON = "2" ]; then
-	chgrp -R $DJANGO_GROUP /etc/opt/$DJANGO_PROJECT/settings.pyc
-else
-	chgrp -R $DJANGO_GROUP /etc/opt/$DJANGO_PROJECT/__pycache__
-fi
 mkdir -p /var/cache/$DJANGO_PROJECT/static
 PYTHONPATH=/etc/opt/$DJANGO_PROJECT:/opt/$DJANGO_PROJECT \
 	/opt/$DJANGO_PROJECT/venv/bin/python \
