@@ -54,6 +54,15 @@ to forget about PostgreSQL and continue using SQLite.** It is risky to
 put your customer's data on a system that you don't understand and that
 you've set up just by blindly following instructions.
 
+Before installing PostgreSQL, double check your locale:
+
+.. code-block:: bash
+
+   locale
+
+Does LC_CTYPE indicate a UTF-8 locale? If yes, proceed to install
+PostgreSQL; if not, read about locales in the Appendix.
+
 .. code-block:: bash
 
    apt install postgresql
@@ -78,8 +87,8 @@ placeholders here to signal to you that they denote something different.
 
 .. code-block:: sql
 
-   CREATE USER $DJANGO_DBUSER PASSWORD '$DJANGO_DB_PASSWORD';
-   CREATE DATABASE $DJANGO_DATABASE OWNER $DJANGO_DBUSER;
+   CREATE USER $DJANGO_DB_USER PASSWORD '$DJANGO_DB_PASSWORD';
+   CREATE DATABASE $DJANGO_DATABASE OWNER $DJANGO_DB_USER;
 
 The command to exit ``psql`` is ``\q``.
 
@@ -186,9 +195,317 @@ to the system; if the socket had been named
 same. The PostgreSQL developers chose to add the "5432" in the name of
 the socket as a convenience, in order to signify that this socket leads
 to the same PostgreSQL server as the one listening on TCP port 5432.
-This is useful in the rare case where many PostgreSQL instances are
-running on the same machine.
+This is useful in the rare case where many PostgreSQL instances (called
+"clusters", which I explain later) are running on the same machine.
 
-PostgreSQL users and authentication
+.. hint:: Hidden files
+
+   In Unix, when a file begins with a dot, it's "hidden". This means
+   that ``ls`` doesn't normally show it, and that when you use wildcards
+   such as ``*`` to denote all files, the shell will not include it.
+   Otherwise it's not different from non-hidden files.
+
+   To list the contents of a directory including hidden files, use the
+   ``-a`` option:
+
+   .. code-block:: bash
+
+      ls -a /var/run/postgresql
+
+   This will include ``.`` and ``..``, which denote the directory itself
+   and the parent directory (``/var/run/postgresql/.`` is the same as
+   ``/var/run/postgresql``; ``/var/run/postgresql/..`` is the same as
+   ``/var/run``). You can use ``-A`` instead of ``-a`` to include all
+   hidden files except ``.`` and ``..``.
+
+
+PostgreSQL roles and authentication
 -----------------------------------
 
+After a client such as ``psql`` connects to the TCP port or to the Unix
+domain socket of the PostgreSQL server, it must authenticate before
+doing anything else. It must login, so to speak, as a user. Like many
+other relational database management systems (RDBMS's), PostgreSQL keeps
+its own list of users and has a sophisticated permissions system with
+which different users have different permissions on different databases
+and tables. This is useful in desktop applications. In the Greek tax
+office, for example, employees run a program on their computer, and the
+program asks them for their username and password, with which they login
+to the tax office RDBMS, which is Oracle, and Oracle decides what this
+user can or cannot access.
+
+Web applications changed that. Instead of PostgreSQL managing the users
+and their permissions, we have a single PostgreSQL user,
+$DJANGO_DB_USER, as which Django connects to PostgreSQL, and this user
+has full permissions on the $DJANGO_DB database. The actual users and
+their permissions are managed by ``django.contrib.admin``. What a user
+can or cannot do is decided by Django, not by PostgreSQL. This is a pity
+because ``django.contrib.admin`` (or the equivalent in other web
+frameworks) largely duplicates functionality that already exists in the
+RDBMS, and because having the RDBMS check the permissions is more robust
+and more secure. I believe that the reason web frameworks were developed
+this way is independence from any specific RDBMS, but I don't really
+know.  Whatever the reason, we will live with that, but I am telling you
+the story so that you can understand why we need to create a PostgreSQL
+user for Django to connect to PostgreSQL as.
+
+Just as in Unix the user "root" is the superuser, meaning it has full
+permissions, and likewise the "administrator" in Windows, in PostgreSQL
+the superuser is "postgres". I am talking about the database user, not
+the operating system user. There is also an operating system "postgres"
+user, but here I don't mean the user that is stored in ``/etc/passwd``
+and which you can give as an argument to ``su``; I mean a PostgreSQL
+user. The fact that there exists an operating system user that happens
+to have the same username is irrelevant.
+
+Let's go back to our innocent looking command:
+
+.. code-block:: bash
+
+   su postgres -c 'psql template1'
+
+As I explained, since we don't specify the database server, ``psql`` by
+default connects to the Unix domain socket
+``/var/run/postgresql/.s.PGSQL.5432``. The first thing it must do after
+connecting is authenticating. We could have specified a user to
+authenticate as with the ``--username`` option. Since we did not,
+``psql`` uses the default. The default is what the ``PGUSER``
+environment variable says, and if this is absent, it is the username of
+the current operating system user. In our case, the operating system
+user is ``postgres``, because we executed ``su postgres``; so ``psql``
+attempts to authenticate as the PostgreSQL user ``postgres``.
+
+To make sure you understand this clearly, try to run ``psql template1``
+as root:
+
+.. code-block:: bash
+
+   psql template1
+
+What does it tell you? Can you understand why? If not, please re-read
+the previous paragraph. Note that after you have just installed
+PostgreSQL, it has only one user, ``postgres``.
+
+So, ``psql`` connected to ``/var/run/postgresql/.s.PGSQL.5432`` and
+asked to authenticate as ``postgres``. At this point, you might have
+expected the server to request a password, which it didn't. The reason
+is that PostgreSQL supports many different authentication methods, and
+password authentication is only one of them. In that case, it used
+another method, "peer authentication". By default, PostgreSQL is
+configured to use peer authentication when the connection is local (that
+is, through the Unix domain socket) and password authentication when the
+connection is through TCP. So try this instead to see that it will ask
+for a password:
+
+.. code-block:: bash
+
+   su postgres -c 'psql --host=localhost template1'
+
+You don't know the ``postgres`` password, so just provide an empty
+password and see that it refuses the connection. I don't know the
+password either. I believe that Debian/Ubuntu sets no password (i.e.
+invalid password) at installation time. You can set a valid password
+with ``ALTER USER postgres PASSWORD 'topsecret'``, but don't do that.
+There is no reason for the ``postgres`` user to connect to the database
+with password authentication, it could be a security risk, and you
+certainly don't want to add yet another password to your password
+manager.
+
+Let's go back to what we were saying. ``psql`` connected to the socket
+and asked to authenticate as ``postgres``. The server decided to use
+peer authentication, because the connection is local. In peer
+authentication, the server asks the operating system: "who is the user
+who connected to the socket?" The operating system replied: "postgres".
+The server checks that the operating system user name is the same as the
+PostgreSQL user name which the client has requested to authenticate as.
+If it is, the server allows. So the Unix ``postgres`` user can always
+connect locally (through the socket) as the PostgreSQL ``postgres``
+user, and the Unix ``joe`` user can always connect locally as the
+PostgreSQL ``joe`` user.
+
+So, in fact, if $DJANGO_USER and $DJANGO_DB_USER are the same (and they
+are if so far you have followed everything I said), you could use these
+Django settings:
+
+.. code-block:: python
+
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.postgresql_psycopg2',
+            'NAME': '$DJANGO_DATABASE',
+            'USER': '$DJANGO_DB_USER',
+        }
+    }
+
+In this case, Django will connect to PostgreSQL using the Unix domain
+socket, and PostgreSQL will authenticate it with peer authentication.
+This is quite cool, because you don't need to manage yet another
+password. However, I don't recommend it. First, most of your colleagues
+will have trouble understanding that setup, and you can't expect
+everyone to sit down and read everything and understand everything in
+detail. Second, next month you may decide to put Django and PostgreSQL
+on different machines, and using password authentication you make your
+Django settings ready for that change. It's also better, both for
+automation and your sanity, to have similar Django settings on all your
+deployments, and not to make some of them different just because it
+happens that PostgreSQL and Django run on the same machine there.
+
+Remember that when we created the $DJANGO_DATABASE database, we made
+$DJANGO_DB_USER its owner?
+
+.. code-block:: sql
+
+   CREATE DATABASE $DJANGO_DATABASE OWNER $DJANGO_DB_USER;
+
+The owner of a database has full permission to do anything in that
+database: create and drop tables; update, insert and delete any rows
+from any tables; grant other users permission to do these things; and
+drop the entire database. This is by far the easiest and recommended way
+to give $DJANGO_DB_USER the required permissions.
+
+Before I move to the next section, two more things you need to know.
+PostgreSQL authentication is configurable. The configuration is at
+``/etc/postgresql/9.x/main/pg_hba.conf``. Avoid touching it, as it is a
+bit complicated. The default (peer authentication for Unix domain socket
+connections, password authentication for TCP connections) works fine for
+most cases. The only problem you are likely to face is that the default
+configuration does not allow connection from other machines, only from
+localhost. So if you ever put PostgreSQL on a different machine from
+Django, you will need to modify the configuration.
+
+Finally, PostgreSQL used to have users and groups, but the PostgreSQL
+developers found out that these two types of entity had so much in
+common that they joined them into a single type that is called "role". A
+role can be a member of another role, just as a user could belong to a
+group. This is why you will see "role joe does not exist" in error
+messages, and why ``CREATE USER`` and ``CREATE ROLE`` are exactly the
+same thing.
+
+PostgreSQL databases and clusters
+---------------------------------
+
+Several pages ago, we gave this command:
+
+.. code-block:: bash
+
+   su postgres -c 'psql template1'
+
+I have explained where it connected and how it authenticated, and to
+finish this up I only need to explain why we told it to connect to the
+"template1" database.
+
+The thing is, there was actually no theoretical need to connect to a
+database. The only two commands we gave it were these:
+
+.. code-block:: sql
+
+   CREATE USER $DJANGO_DB_USER PASSWORD '$DJANGO_DB_PASSWORD';
+   CREATE DATABASE $DJANGO_DATABASE OWNER $DJANGO_DB_USER;
+
+I also told you, for experiment, to also provide the ``\l`` command,
+which lists the databases.
+
+All three commands are independent of database and would work exactly
+the same regardless of which database we are connected to. However,
+whenever a client connects to PostgreSQL, it *must* connect to a
+database. There is no way to tell the server "hello, I'm user postgres,
+authenticate me, but I don't want to connect to any specific database
+because I only want to do work that is independent of any specific
+database". Since you must connect to a database, you can choose any of
+the three that are always known to exist: ``postgres``, ``template0``,
+and ``template1``. It is a long held custom to connect to ``template1``
+in such cases.
+
+The official PostgreSQL documentation explains ``template0`` and
+``template1`` so perfectly that I will simply copy it here:
+
+    CREATE DATABASE actually works by copying an existing database. By
+    default, it copies the standard system database named ``template1``.
+    Thus that database is the "template" from which new databases are
+    made. If you add objects to ``template1``, these objects will be
+    copied into subsequently created user databases. This behavior
+    allows site-local modifications to the standard set of objects in
+    databases. For example, if you install the procedural language
+    PL/Perl in ``template1``, it will automatically be available in user
+    databases without any extra action being taken when those databases
+    are created.
+
+    There is a second standard system database named ``template0``. This
+    database contains the same data as the initial contents of
+    ``template1``, that is, only the standard objects predefined by your
+    version of PostgreSQL. ``template0`` should never be changed after
+    the database cluster has been initialized. By instructing CREATE
+    DATABASE to copy ``template0`` instead of ``template1``, you can
+    create a "virgin" user database that contains none of the site-local
+    additions in ``template1``. This is particularly handy when
+    restoring a ``pg_dump`` dump: the dump script should be restored in
+    a virgin database to ensure that one recreates the correct contents
+    of the dumped database, without conflicting with objects that might
+    have been added to ``template1`` later on.
+
+There's more about that in `Section 22.3`_ of the documentation. In
+practice, I never touch ``template1`` either. I like to have PostGIS in
+the template, but what I do is create another template,
+``template_postgis``, for the purpose. Once or twice I accidentally
+created tables in ``template1``. I don't remember how I fixed it, the
+obvious way is to delete the tables, but if the mess is very big and
+difficult to fix, one way is to drop ``template1`` and recreate it from
+``template0``.
+
+.. _section 22.3: https://www.postgresql.org/docs/9.6/static/manage-ag-templatedbs.html
+
+I'm not certain about what the ``postgres`` database is for. All the
+documentation says is that it "is a default database meant for use by
+users, utilities and third party applications." Given how great and
+precise the PostgreSQL documentation is, I take that at face value.
+However, I don't believe anyone seriously ever uses that database. It's
+probably a remnant of the early days of PostgreSQL. I tried deleting it
+in a test installation and saw no side effect. However, better not touch
+it, just leave it there and never use it.
+
+Now let's finally explain what a cluster is. Let's see it with an
+example. Remember that nginx reads ``/etc/nginx/nginx.conf`` and listens
+on port 80? Well, it's entirely possible to start another instance of
+nginx on the same server, that reads ``/home/antonis/nginx.conf`` and
+listens to another port. That other instance will have different lock
+files, different log files, different configuration files, and can have
+different directory roots, so it can be totally independent. It's very
+rarely needed, but it can be done (I've done it once to debug a
+production server of a problem I couldn't reproduce in development).
+Likewise, you can start a second instance of PostgreSQL, that uses
+different configuration files and a different data file directory, and
+listens on a different port (and different Unix domain socket). Since it
+is totally independent of the other instance, it also has its own users
+and its own databases, and is served by different server processes.
+These server processes could even be run by different operating system
+users (but in practice we use the same user, ``postgres``, for all of
+them). Each such instance of PostgreSQL is called a cluster. By far most
+PostgreSQL installations have a single cluster called "main", so you
+needn't worry further about it; just be aware that this is why the
+configuration files are in ``/etc/postgresql/9.x/main``, why the data
+files are in ``/var/lib/postgresql/9.x/main``, and why the log files are
+named ``/var/log/postgresql/postgresql-9.x-main.log``. If you ever
+create a second cluster on the same machine, you will be doing something
+advanced, like setting up certain kinds of replication. If you are doing
+such an advanced thing now, you are probably reading the wrong book.
+
+Further reading
+---------------
+
+You may have noticed that I close most chapters with a summary, which,
+among other things, repeats most of the code and configuration snippets
+of the chapter. In this chapter I have no summary to write, because I
+have already written it; it's Section `Getting started with
+PostgreSQL`_.  In the rest of the chapter I merely explained it.
+
+I explain in the next chapter, but it is so important that I must repeat
+it here, that **you should not backup your PostgreSQL database by
+copying its data files from /var/lib/postgresql**. If you do such a
+thing, you risk being unable to restore it when you need it. Read the
+next chapter for more information.
+
+I hope I wrote enough to get you started. You should be able to use it
+in production now, and learn a little bit more and more as you go on.
+Its documentation is the natural place to continue. If you ever do
+anything advanced, Gregory Smith's PostgreSQL High Performance is a nice
+book.
