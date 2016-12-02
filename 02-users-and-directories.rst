@@ -25,7 +25,7 @@ name, although it might be the same as ``$DJANGO_PROJECT``.
 
 Here is why we use these parameters:
 
-**--system**
+``--system``
     This tells ``adduser`` to create a system user, as opposed to
     creating a normal user. System users are intended to run programs,
     whereas normal users are people. Because of this parameter,
@@ -33,24 +33,24 @@ Here is why we use these parameters:
     convention for knowing that this is a system user. Otherwise there
     isn't much difference.
 
-**--home=/var/opt/$DJANGO_PROJECT**
+``--home=/var/opt/$DJANGO_PROJECT``
     This specifies the home directory for the user. For system users, it
     doesn't really matter which directory we will choose, but by
     convention we choose the one which holds the program's data. We will
     talk about the ``/var/opt/$DJANGO_PROJECT`` directory later.
 
-**--no-create-home**
+``--no-create-home``
     We tell ``adduser`` to not create the home directory. We could allow
     it to create it, but we will create it ourselves later on, for
     instructive purposes.
 
-**--disabled-password**
+``--disabled-password``
     The password will be, well, disabled. This means that you won't be
     able to become this user by using a password. However, the root user
     can always become another user (e.g. with ``su``) without using a
     password, so we don't need one.
 
-**--group**
+``--group``
     This tells ``adduser`` to not only add a new user, but to also add a
     new group, having the same name as the user, and make the new user a
     member of the new group. We will see further below why this is
@@ -61,7 +61,7 @@ Here is why we use these parameters:
     perfectly clear when we are talking about the user and when we are
     talking about the group.
 
-**--shell=/bin/bash**
+``--shell=/bin/bash``
     By default, ``adduser`` uses ``/bin/false`` as the shell for system
     users, which practically means they are disabled; ``/bin/false``
     can't run any commands. We want the user to have the most common
