@@ -151,10 +151,11 @@ several sections. Better go make some tea, relax, and come back.
 
 A web server listens on TCP port 80 and a client, usually a browser,
 connects to that port and asks for some information. The server and the
-client communicate in a language, in this case the HTTP In very much the
-same way, the PostgreSQL server is listening on a communication port and
-a client connects to that port. The client and the server communicate in
-the PostgreSQL Frontend/Backend Protocol.
+client communicate in a language, in this case the Hypertext Transfer
+Protocol or HTTP. In very much the same way, the PostgreSQL server is
+listening on a communication port and a client connects to that port.
+The client and the server communicate in the PostgreSQL Frontend/Backend
+Protocol.
 
 In the case of the ``psql template1`` command, ``psql``, the PostgreSQL
 interactive terminal, is the client. It connects to the server, and gets
@@ -446,22 +447,30 @@ The official PostgreSQL documentation explains ``template0`` and
 There's more about that in `Section 22.3`_ of the documentation. In
 practice, I never touch ``template1`` either. I like to have PostGIS in
 the template, but what I do is create another template,
-``template_postgis``, for the purpose. Once or twice I accidentally
-created tables in ``template1``. I don't remember how I fixed it, the
-obvious way is to delete the tables, but if the mess is very big and
-difficult to fix, one way is to drop ``template1`` and recreate it from
-``template0``.
+``template_postgis``, for the purpose.
 
 .. _section 22.3: https://www.postgresql.org/docs/9.6/static/manage-ag-templatedbs.html
 
-I'm not certain about what the ``postgres`` database is for. All the
-documentation says is that it "is a default database meant for use by
-users, utilities and third party applications." Given how great and
-precise the PostgreSQL documentation is, I take that at face value.
-However, I don't believe anyone seriously ever uses that database. It's
-probably a remnant of the early days of PostgreSQL. I tried deleting it
-in a test installation and saw no side effect. However, better not touch
-it, just leave it there and never use it.
+Before explaining what the ``postgres`` database is for, we need to look
+at an alternative way of creating users and databases. Instead of using
+``psql`` and executing ``CREATE USER`` and ``CREATE DATABASE``, you can
+run these commands:
+
+.. code-block:: bash
+
+   su postgres -c "createuser --pwprompt $DJANGO_DB_USER"
+   su postgres -c "createdb --owner=$DJANGO_DB_USER $DJANGO_DATABASE"
+
+Like ``psql``, ``createuser`` and ``createdb`` are PostgreSQL clients;
+they do nothing more than connect to the PostgreSQL server, construct
+``CREATE USER`` and ``CREATE DATABASE`` commands from the arguments you
+have given, and send these commands to the server. As I've explained,
+whenever a client connects to PostgreSQL, it *must* connect to a
+database. What ``createuser`` and ``createdb`` (and other PostgreSQL
+utility programs) do is connect to the ``postgres`` database.  So
+``postgres`` is actually an empty, dummy database used when a client
+needs to connect to the PostgreSQL server without caring about the
+database.
 
 Now let's finally explain what a cluster is. Let's see it with an
 example. Remember that nginx reads ``/etc/nginx/nginx.conf`` and listens
@@ -506,6 +515,6 @@ next chapter for more information.
 
 I hope I wrote enough to get you started. You should be able to use it
 in production now, and learn a little bit more and more as you go on.
-Its documentation is the natural place to continue. If you ever do
+Its great documentation is the natural place to continue. If you ever do
 anything advanced, Gregory Smith's PostgreSQL High Performance is a nice
 book.
