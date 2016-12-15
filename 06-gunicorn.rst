@@ -121,7 +121,7 @@ Here is what these parameters mean:
    they will be queued.
 
    ``gevent``, on the other hand, is event-driven. If you don't
-   understand what this means, read "Apache vs. nginx" in the Appendix.
+   understand what this means, read my `Apache vs. nginx`_ blog post.
    ``sync`` works like Apache (except that the most common setup for
    Apache is for it to use threads, whereas Gunicorn's ``sync`` mode
    uses processes, which consume more memory than threads and are more
@@ -148,6 +148,8 @@ Here is what these parameters mean:
    versions that return immediately, allowing ``gevent`` to execute
    other coroutines while waiting for the data to come (a "coroutine" is
    the equivalent of a thread in asynchronous programming).
+
+   .. _apache vs. nginx: http://djangodeployment.com/2016/11/15/why-nginx-is-faster-than-apache-and-why-you-neednt-necessarily-care/
 
 ``--workers=1``
    This parameter specifies how many processes ``Gunicorn`` will start.

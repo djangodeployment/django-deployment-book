@@ -381,8 +381,8 @@ have already done the ``migrate`` part), like this:
 
 Do you understand that very clearly? If not, here are some tips:
 
- * Make sure you have a grip on ``virtualenv``, environment variables,
-   and ``su``; all these are explained in the Appendix.
+ * Make sure you have a grip on virtualenv_, `environment variables`_,
+   and ``su``.
  * Python reads the ``PYTHONPATH`` environment variable and adds
    the specified directories to the Python path.
  * Django reads the ``DJANGO_SETTINGS_MODULE`` environment variable.
@@ -406,6 +406,9 @@ Do you understand that very clearly? If not, here are some tips:
    tell it ``python manage.py [whatever]`` and it finds your project.
    We prefer, however, to set the ``PYTHONPATH`` and not change
    directory; this way our setup will be clearer and more robust.
+
+.. _virtualenv: http://djangodeployment.com/2016/11/01/virtualenv-demystified/
+.. _environment variables: http://djangodeployment.com/2016/11/07/what-is-the-difference-between-a-shell-variable-and-an-environment-variable/
 
 Instead of using ``DJANGO_SETTINGS_MODULE``, you can also use the
 ``--settings`` parameter of ``manage.py``:

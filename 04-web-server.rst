@@ -11,8 +11,10 @@ nginx.  Apache is also widely used, and it is preferable in some cases.
 If you have any reason to prefer it, go ahead and use it.
 
 If you want don't know what to do, choose nginx. If you want to know
-more about the pros and cons of each one, there is an article at the
-Appendix.
+more about the pros and cons of each one, I have written `a blog post
+about it`_.
+
+.. _a blog post about it: http://djangodeployment.com/2016/11/15/why-nginx-is-faster-than-apache-and-why-you-neednt-necessarily-care/
 
 Installing nginx
 ----------------
@@ -177,10 +179,9 @@ Here is what these configuration directives do:
 
 **proxy_set_header Host $http_host**
    By default, the header of the request nginx makes to the backend
-   includes ``Host: localhost`` (if you don't understand the ``Host``
-   header, read "How Apache/nginx virtual hosts work" in the Appendix).
-   We need to pass the real ``Host`` to Django (i.e. the one received
-   by nginx), otherwise Django cannot check if it's in `ALLOWED_HOSTS``.
+   includes ``Host: localhost``.  We need to pass the real ``Host`` to
+   Django (i.e. the one received by nginx), otherwise Django cannot
+   check if it's in `ALLOWED_HOSTS``.
 **proxy_redirect off**
    This tells nginx that, if the backend returns an HTTP redirect, it
    should leave it as is. (By default, nginx assumes the backend is
@@ -404,10 +405,9 @@ Here is what these configuration directives do:
 
 **ProxyPreserveHost On**
    By default, the header of the request Apache makes to the backend
-   includes ``Host: localhost`` (if you don't understand the ``Host``
-   header, read "How Apache/nginx virtual hosts work" in the Appendix).
-   We need to pass the real ``Host`` to Django (i.e. the one received
-   by Apache), otherwise Django cannot check if it's in `ALLOWED_HOSTS``.
+   includes ``Host: localhost`` We need to pass the real ``Host`` to
+   Django (i.e. the one received by Apache), otherwise Django cannot
+   check if it's in ``ALLOWED_HOSTS``.
 **RequestHeader set X-Forwarded-Proto "http"**
    Another thing that Django does not know is whether the request has
    been made through HTTPS or plain HTTP; Apache knows that, but the

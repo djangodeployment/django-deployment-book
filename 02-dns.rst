@@ -11,8 +11,8 @@ it first and then write the code. **The big problem with DNS is that if
 you screw things up, even if you fix or revert things, it may be days
 before the system works again**. So you need to read carefully.
 
-You open your browser and type http://djangodeployment.com/. The first
-thing your browser does is find the IP address of the machine
+When you open your browser and type http://djangodeployment.com/, the
+first thing your browser does is find the IP address of the machine
 djangodeployment.com. For this, it asks a component of the operating
 system called the "resolver": "What is the IP address of
 djangodeployment.com?"  After some time (usually from a few ms to a few
@@ -127,17 +127,17 @@ often it will have cached the name servers for the top level domain, and
 sometimes it will also have cached some lower stuff.
 
 So here is the big problem with DNS: it's not hard to get it right (it's
-certainly easier than writing a Django program), but if you make the
-slightest error you might be stuck with the wrong information for up to
-two days (or even a week). If you make an error when configuring your
-domain name, and a customer attempts to access your site, the error may
-be cached by the customer's name server for up to two days, and you can
-do nothing about it except fix the error and wait. There is no way to
-send a signal to all the name servers of the world and tell them "hey,
-please invalidate the cache for djangodeployment.com". Different
-customers or visitors of your site will experience different amounts of
-downtime, depending on when exactly their local name server will decide
-to expire its cache.
+easier than writing a Django program), but if you make the slightest
+error you might be stuck with the wrong information for up to two days
+(or even a week). If you make an error when configuring your domain
+name, and a customer attempts to access your site, the error may be
+cached by the customer's name server for up to two days, and you can do
+nothing about it except fix the error and wait. There is no way to send
+a signal to all the name servers of the world and tell them "hey, please
+invalidate the cache for djangodeployment.com". Different customers or
+visitors of your site will experience different amounts of downtime,
+depending on when exactly their local name server will decide to expire
+its cache.
 
 Registering a domain name
 -------------------------
@@ -147,17 +147,22 @@ that provide the service of registering a domain name for you. These
 companies are authorized by ICANN, the organization ultimately
 responsible for domain names. So, before registering a domain name, you
 first need to select a registrar, and there are many. I'm using
-BookMyName.com, a French registrar, which I selected more or less at
+BookMyName.com, a French registrar which I selected more or less at
 random. Its web site is unpolished but it works. Another French
 registrar, particularly popular in the free software community, is
 Gandi, but it's a bit more expensive than others. The most popular
 registrar worldwide is GoDaddy, but it supported SOPA, and for me that's
-a showstopper. Another interesting option is Namecheap. I haven't used
-it for domain names, but I've used it for SSL certificates, and I think
-its software is nice and its prices are reasonable. If you don't know
-what to do, choose that one. There are also dozens of other options, and
-it's fine to choose another one. Note that I'm not affiliated with any
+a showstopper. Another interesting option is Namecheap; I think its
+software is nice and its prices are reasonable. If you don't know what
+to do, choose that one. There are also dozens of other options, and it's
+fine to choose another one. Note that I'm not affiliated with any
 registrar (and certainly none of the four I've mentioned).
+
+For practice, you can go and register a cheap test domain; Namecheap,
+for example, sells some domains for $0.88 per year. Go get one now so
+that you can start messing around with it. Below I use ".com" as an
+example, but if your domain is different ($0.88 domains certainly aren't
+.com) it doesn't matter, exactly the same rules apply.
 
 When you register a .com domain name at the registrar's web site, two
 things happen:
@@ -175,74 +180,101 @@ things happen:
     djangodeployment.com is registered, and that the site name servers
     are the three mentioned above. I am going to call the .com name
     servers the **upstream name servers**. If your domain is
-    mydomain.co.uk, then the upstream name servers are those responsible
-    for .co.uk.
+    mydomain.co.uk, the upstream name servers are those responsible for
+    .co.uk.
 
 Adding records to your domain
 -----------------------------
 
-The DNS is actually a distributed key-value database, and it consists of
-records. Each record maps the key to a value. For example, the key is
-djangodeployment.com, the value is 71.19.145.109. Your registrar
-provides a web interface with which you can add, remove and edit
-records (in Namecheap you need to go to the Dashboard, Domain list,
-Manage (the domain), Advanced DNS).
+The DNS database consists of records. Each record maps a name to a
+value. For example, a record says that the name djangodeployment.com
+corresponds to the value 71.19.145.109. Your registrar provides a web
+interface with which you can add, remove and edit records (in Namecheap
+you need to go to the Dashboard, Domain list, Manage (the domain),
+Advanced DNS). Go to your registrar's interface and, for the test domain
+you created, create the following records (remember that
+$SERVER_IPv4_ADDRESS and $SERVER_IPv6_ADDRESS are placeholders and you
+need to replace them with something else; also omit the "AAAA" records
+if your server doesn't have an IPv6 address):
 
-This is the largest part of the DNS database for djangodeployment.com:
-
-========================  ==== ===== ========================
-Name                      Type TTL   Value
-========================  ==== ===== ========================
-djangodeployment.com      A    28800 71.19.145.109
-djangodeployment.com      AAAA 28800 2605:2700:0:3::4713:916d
-www.djangodeployment.com  A    28800 71.19.145.109
-www.djangodeployment.com  AAAA 28800 2605:2700:0:3::4713:916d
-========================  ==== ===== ========================
+==== ==== ===== ====================
+Name Type TTL   Value
+==== ==== ===== ====================
+@    A    300   $SERVER_IPv4_ADDRESS
+@    AAAA 300   $SERVER_IPv6_ADDRESS
+www  A    300   $SERVER_IPv4_ADDRESS
+www  AAAA 300   $SERVER_IPv6_ADDRESS
+==== ==== ===== ====================
 
 Each record has a type. There are many different types of records, but
-the ones you need to be aware of here is A, AAAA, and CNAME. "A" defines
+the ones you need to be aware of here are A, AAAA, and CNAME. "A" defines
 an IPv4 address, whereas "AAAA" defines an IPv6 address. We will deal
 with CNAME a bit later.
 
+When you see "@" as a name, I mean a literal "@" symbol. This is
+shorthand for writing the domain itself. If your domain is mydomain.com,
+then whether you enter "mydomain.com." (with a trailing dot) or "@" in
+the field for the name is exactly the same thing. Some registrars might
+be allowing only the shorthand "@", but often it is allowed to write
+"mydomain.com.". Use the "@", which is more common. The first of these
+four records means that the domain itself resolves to
+$SERVER_IPv4_ADDRESS. Likewise for the second record.
+
+If your domain is mydomain.com, the next two records define the IP
+addresses for www.mydomain.com. In the field for the name, you can
+either write "www.mydomain.com." (with a trailing dot), or "www",
+without a trailing dot. Use the latter, which is more common. In the
+rest of the text, I will be using $DOMAIN and www.$DOMAIN instead of
+mydomain.com and www.mydomain.com, and you should understand that you
+need to replace "$DOMAIN" with your actual domain.
+
+These four records are normally all that you need to set. In theory you
+can set www.$DOMAIN to point to a different server than $DOMAIN, but
+this is uncommon. You can also define ftp.$DOMAIN and
+whateverelse.$DOMAIN, but this is often not needed.
+
 The TTL, meaning "time to live", is the maximum allowed caching time.
 When a name server asks the domain's name server for the IPv4 address of
-djangodeployment.com, the domain's name server will reply
-"djangodeployment.com is 71.19.145.109, and you can cache this
-information for 28800 seconds". You can reduce this to 300 seconds if
-you like, but don't make it less. It will increase the number of queries
-your visitors will make, thus making responses a bit slower; and some
-name servers will ignore the TTL if it's less than 300 and use 300
-anyway.  A common tactic is to use a large value (say 28800), and when
-for some reason you need to switch to another server, you reduce that to
-300, wait at least 8 hours (28800 seconds), then bring the server down,
-change the DNS to point to the new server, then start the new server. If
-planned correctly and executed without problems, the switch will result
-in a downtime of no more than 300 seconds.
+$DOMAIN, the domain's name server will reply "$DOMAIN is 71.19.145.109,
+and you can cache this information for 300 seconds". Don't make it less
+than 300; it will increase the number of queries your visitors will
+make, thus making responses a bit slower; and some name servers will
+ignore the TTL if it's less than 300 and use 300 anyway.  A common
+tactic is to use a large value (say 28800), and when for some reason you
+need to switch to another server, you reduce that to 300, wait at least
+8 hours (28800 seconds), then bring the server down, change the DNS to
+point to the new server, then start the new server. If planned correctly
+and executed without problems, the switch will result in a downtime of
+no more than 300 seconds. After this is finished, you change the TTL to
+28800 again.
 
 You can usually leave the TTL field empty. In that case, a default
 TTL applies. The default TTL for the zone ("zone" is more or less the
 same as a domain) is normally configurable, but this may depend on the
-web interface of the registrant.
+web interface of the registrar.
 
-CNAME records are a kind of alias. For example, another domain I'm
+CNAME records are a kind of alias. For example, one of the domains I'm
 managing is openmeteo.org, and its database is like this:
 
-========================  ===== ===== ====================================
-Name                      Type  TTL   Value
-========================  ===== ===== ====================================
-openmeteo.org             A     300   83.212.168.232
-openmeteo.org             AAAA  300   2001:648:2ffc:1014:a800:ff:feb1:6047
-www.openmeteo.org         CNAME 300   ilissos.openmeteo.org.
-ilissos.openmeteo.org     A     300   83.212.168.232
-ilissos.openmeteo.org     AAAA  300   2001:648:2ffc:1014:a800:ff:feb1:6047
-========================  ===== ===== ====================================
+======= ===== ===== ====================================
+Name    Type  TTL   Value
+======= ===== ===== ====================================
+@       A     300   83.212.168.232
+@       AAAA  300   2001:648:2ffc:1014:a800:ff:feb1:6047
+www     CNAME 300   ilissos.openmeteo.org.
+ilissos A     300   83.212.168.232
+ilissos AAAA  300   2001:648:2ffc:1014:a800:ff:feb1:6047
+======= ===== ===== ====================================
 
 The machine that hosts the web service for openmeteo.org is called
 ilissos.openmeteo.org. When the name server is queried for
 www.openmeteo.org, it replies: "Hi, www.openmeteo.org is an alias; the
 canonical name is ilissos.openmeteo.org." So then it has to be queried
 again for ilissos.openmeteo.org. (However, you cannot use CNAME for the
-domain itself, only for other hosts within the domain.)
+domain itself, only for other hosts within the domain.) On the right
+hand side of CNAMEs, you should always specify the fully qualified
+domain name **and end it with a dot**, such as "ilissos.openmeteo.org.",
+as in the example above.
 
 I used to use CNAMEs a lot, but now I avoid them, because they make
 first-time visits a little slower. Assume you want to visit
@@ -255,40 +287,24 @@ first-time visits a little slower. Assume you want to visit
 
  3. The request http://www.openmeteo.org/synoptic/irma is sent to the IP
     address. The web server redirects it to
-    http://openmeteo.org/synoptic/irma (in theory it's a good idea for
-    URLs to be unique, so in theory it's a good idea to not have URLs
-    with and without the leading www to point to the same resource, so
-    in theory it's a good idea to have one redirect to the other).
+    http://openmeteo.org/synoptic/irma, without the www.
 
  4. The request http://openmeteo.org/synoptic/irma is sent to the IP
     address, and it is redirected to
-    http://openmeteo.org/synoptic/irma/, because I'm using 
-    ``APPEND_SLASH = True`` in Django's settings, because, again, it's
-    (in theory) a good idea for URLs to be unique.
+    http://openmeteo.org/synoptic/irma/, because I'm using
+    ``APPEND_SLASH = True`` in Django's settings.
 
  5. The request http://openmeteo.org/synoptic/irma/ is sent to the IP
     address, and this time a proper response is returned.
 
-All these steps take a little time (for the first request of first time
-visitors). Today people have little patience, and it's a good idea for
-the visitor's browser to start drawing something on the screen within at
-most one second, otherwise you will be losing a non-negligible number of
-visitors. So lately I've stopped using CNAMEs, and I've stopped
-redirecting between URLs with and without the leading www.
-
-The exact syntax of the DNS records depends on the web interface of your
-registrar, however here are some things that you must know:
-
- 1. Usually on the left hand side instead of "www.djangodeployment.com"
-    you only specify "www"; likewise, instead of "ilissos.openmeteo.org"
-    you specify "ilissos".
- 2. The domain itself (again, on the left hand side) is often denoted
-    with the shorthand "@". So a single "@" means "djangodeployment.com"
-    or "openmeteo.org", depending on which domain's records you are
-    managing.
- 3. On the right hand side of CNAMEs, you should always specify the
-    fully qualified domain name **and end it with a dot**, such as
-    "ilissos.openmeteo.org.", as in the example above.
+All these steps take a small amount of time which may add up to one
+second or more. This is only for the first request of first time
+visitors, but today people have little patience, and it's a good idea
+for the visitor's browser to start drawing something on the screen
+within at most one second, otherwise you will be losing a non-negligible
+number of visitors. Besides, a high quality web site should not have
+unnecessary delays. So lately I've stopped using CNAMEs, and I've
+stopped redirecting between URLs with and without the leading www.
 
 Changing the domain's name servers
 ----------------------------------
@@ -323,31 +339,106 @@ Finally, some information about the NS record, which means "name
 server". I haven't told you, but the DNS database (the zone file, as it
 is called) for djangodeployment.com also contains these records:
 
-========================  ==== ===== ========================
-Name                      Type TTL   Value
-========================  ==== ===== ========================
-djangodeployment.com      NS   28800 nsa.bookmyname.com.
-djangodeployment.com      NS   28800 nsb.bookmyname.com.
-djangodeployment.com      NS   28800 nsc.bookmyname.com.
-========================  ==== ===== ========================
+==== ==== ===== ===================
+Name Type TTL   Value
+==== ==== ===== ===================
+@    NS   28800 nsa.bookmyname.com.
+@    NS   28800 nsb.bookmyname.com.
+@    NS   28800 nsc.bookmyname.com.
+==== ==== ===== ===================
 
-(As you can see, there can be many records with the same type and key,
+(As you can see, there can be many records with the same type and name,
 and this is true of A and AAAA records as well—one name may map to many
 IP addresses, but we will not delve into that here.)
 
 I have never really understood the reason for the existence of these
-records **in the domain's DNS database**. The upstream name servers
+records **in the domain's zone file**. The upstream name servers
 obviously need to know that, but what's the use of querying a domain's
 name server about which are the domain's name servers? Obviously I
-already know them.  However, for some reason, these records need to be
-present both in the domain's name servers and upstream.
+already know them.  However, `there is a reason`_, and these records
+need to be present both in the domain's name servers and upstream.
+
+.. _there is a reason: http://serverfault.com/questions/588244/what-is-the-role-of-ns-records-at-the-apex-of-a-dns-domain
 
 In any case, these NS records are virtually always configured
 automatically by the registrar or by the web interface of the name
 server provider, so usually you don't need to know more about it. What
 you need to know, however, is that DNS is a complicated system that
 easily fills in several books by itself. It will work well if you are
-gentle with it. If you want to do something more advanced with it and
-you don't really know what you are doing, ask for help from an expert if
-you can't afford the downtime.
+gentle with it. If you want to do something more advanced and you don't
+really know what you are doing, ask for help from an expert if you can't
+afford the downtime.
 
+Editing the hosts file
+----------------------
+
+As I told you earlier, when your browser needs to know the IP address
+that corresponds to a name, it asks your operating system's resolver,
+and the resolver asks the name server. It is possible to bypass the
+asking of the name server and tell the resolver what answers to give.
+This is done by modifying the ``hosts`` file, which in Unixes is
+``/etc/hosts``, and in Windows is
+``C:\Windows\System32\drivers\etc\hosts``. Edit the file and add these
+lines at the end::
+
+    1.2.3.4 mysite.com
+    1.2.3.4 www.mysite.com
+
+Save the file, restart your browser (because, remember, it may be
+caching names), and then visit mysite.com. It will probably fail to
+connect (because 1.2.3.4 does not exist), but the thing is that
+mysite.com has resolved to 1.2.3.4. The resolver found it in the
+``hosts`` file, so it did not ask the DNS server.
+
+I often edit the ``hosts``, for experimenting with a temporary server
+without needing to change the DNS. Sometimes I want to redirect
+a domain to another machine, for development or testing, and I want to
+do this only for myself, without affecting the users of the domain. In
+such cases the ``hosts`` file comes in handy, and the changes made work
+immediately, without needing to wait for DNS caches to expire.
+
+The only thing that you must take care of is to remember to revert the
+``hosts`` file to its original contents; if you forget to do so, it
+might cause you great headaches later (imagine wondering why the web
+site you are deploying is different than what it should be, and
+discovering, after hours of searching, that it was because of a
+forgotten entry in ``hosts``). What I usually do is leave the editor
+open and not close it until after I have reverted the file. When I don't
+do that thing, at least I make certain that the domain I'm playing with
+is ``example.com`` or anyway something very unlikely to ever be actually
+used by me.
+
+Visiting your Django project through the domain
+-----------------------------------------------
+
+In the previous chapter you run Django on a server and it was reachable
+through http://$SERVER_IPv4_ADDRESS/. Now you should have setup your
+DNS and have $DOMAIN point to $SERVER_IPv4_ADDRESS. In your Django
+settings, change ``ALLOWED_HOSTS`` to this::
+
+    ALLOWED_HOSTS = ['$DOMAIN', 'www.$DOMAIN']
+
+Then run the Django development server as in the previous chapter:
+
+.. code-block:: bash
+
+    ./manage.py runserver 0.0.0.0:80
+
+Now you should be able to reach your Django project via http://$DOMAIN/.
+So we fixed the first step; we managed to reach Django through a domain
+instead of an IP address. Next, we will run Django as an unprivileged
+user, and put its files in appropriate directories.
+
+Chapter summary
+---------------
+
+* Register your domain at a registrar.
+* Use the registrar's web interface to specify A and AAAA records for
+  the domain and for www.
+* Be careful when you play with TTLs and when changing the domain's name
+  servers.
+* If you do anything advanced with the DNS and you don't really know
+  what you're doing and you can't afford the downtime, ask for expert
+  help.
+* Set ``ALLOWED_HOSTS = ['$DOMAIN', 'www.$DOMAIN']``.
+* Optionally use your local ``hosts`` file for experimentation.
