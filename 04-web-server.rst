@@ -50,7 +50,7 @@ following contents:
 .. note::
 
    Again, this is not a valid nginx configuration file until you replace
-   ``$DOMAIN`` with your actual domain name, such as "example.com".
+   ``$DOMAIN`` with your actual domain name.
 
 Create a symbolic link in ``sites-enabled``:
 
@@ -58,6 +58,59 @@ Create a symbolic link in ``sites-enabled``:
 
     cd /etc/nginx/sites-enabled
     ln -s ../sites-available/$DOMAIN .
+
+.. _symboliclinks:
+
+.. hint:: Symbolic links
+
+   A symbolic link looks like a file, but in fact it is a pointer to
+   another file. The command
+
+   .. code-block:: bash
+
+      ln -s ../sites-available/$DOMAIN .
+
+   means "create a symbolic link that points to file
+   ``../sites-available/$DOMAIN`` and put the link in the current
+   directory (``.``). Two dots denote the parent directory, so when the
+   current direcotry is ``/etc/nginx/sites-enabled``, ``..`` means the
+   parent, ``/etc/nginx``, whereas ``../sites-available`` means "one up,
+   then down into ``sites-available``. A single dot designates the
+   current directory.
+
+   The command above is exactly equivalent as this:
+
+   .. code-block:: bash
+
+      ln -s ../sites-available/$DOMAIN $DOMAIN
+
+   which means "create a symbolic link that points to file
+   ``../sites-available/$DOMAIN`` and give it the name $DOMAIN. If the
+   last argument of ``ln -s`` is a directory (for example, ``.``), then
+   it creates the symbolic link in there and gives it the same name as
+   the actual file.
+
+   You can treat the symbolic link as if it was a file; you can edit it
+   with an editor, you can open it with a Python program using
+   ``open()``, and in these cases the actual file (the one being pointed
+   to by the symbolic link) is opened instead.
+
+   While the order of arguments in the ``ln`` command may seem strange
+   at first, it is consistent with the order of arguments in the ``cp``
+   command which merely copies files. Just as ``cp source destination``
+   copies file ``source`` to file ``destination``, similarly ``ln -s
+   is like making a copy of the file, but instead of an actual copy, it
+   creates a symbolic link.
+
+   If you list files with `ls -l`, it is clearly indicated
+   which file the symbolic link points to. The permissions of the link,
+   ``rwxrwxrwx``, may seem insecure, but they are actually irrelevant;
+   it is the permissions of the actual file that count.
+
+   Except for symbolic links there are also hard links, which are
+   created without the ``-s`` option, but are different and rarely used.
+   It is unlikely that you will ever create a hard link, so get used to
+   always type ``ln -s``, that is, with the ``-s`` option.
 
 Tell nginx to re-read its configuration:
 
@@ -90,7 +143,7 @@ if their contents had been inserted in that point of
 ``/etc/nginx/nginx.conf``.
 
 As we noticed, if you visit http://$DOMAIN/, you see the page you
-created. If, however, you visit http://$SERVER_IP_ADDRESS/, you should
+created. If, however, you visit http://$SERVER_IPv4_ADDRESS/, you should
 see nginx's welcome page.  If the host name (the part between "http://"
 and the next slash) is $DOMAIN or www.$DOMAIN then nginx uses the
 configuration we specified above, because of the ``server_name``
@@ -105,7 +158,7 @@ default configuration. That default configuration is in
 
     listen 80 default_server;
     listen [::]:80 default_server;
-    
+
 If someone arrives at my server through the wrong domain name, I don't
 want them to see a page that says "Welcome to nginx", so I change the
 default configuration to the following, which merely responds with "Not
@@ -181,7 +234,7 @@ Here is what these configuration directives do:
    By default, the header of the request nginx makes to the backend
    includes ``Host: localhost``.  We need to pass the real ``Host`` to
    Django (i.e. the one received by nginx), otherwise Django cannot
-   check if it's in `ALLOWED_HOSTS``.
+   check if it's in ``ALLOWED_HOSTS``.
 **proxy_redirect off**
    This tells nginx that, if the backend returns an HTTP redirect, it
    should leave it as is. (By default, nginx assumes the backend is
@@ -252,17 +305,22 @@ the following contents:
        DocumentRoot /var/www/$DOMAIN
    </VirtualHost>
 
-Create a symbolic link in ``sites-enabled``:
-
 .. note::
 
    Again, this is not a valid Apache configuration file until you replace
    ``$DOMAIN`` with your actual domain name, such as "example.com".
 
+Create a symbolic link in ``sites-enabled``:
+
 .. code-block:: bash
 
     cd /etc/apache2/sites-enabled
     ln -s ../sites-available/$DOMAIN.conf .
+
+.. hint:: Symbolic links
+
+   If you don't know what symbolic links are, I have described them in
+   :ref:`the equivalent section for nginx<symboliclinks>`.
 
 .. hint:: Use a2ensite
 

@@ -54,22 +54,79 @@ to forget about PostgreSQL and continue using SQLite.** It is risky to
 put your customer's data on a system that you don't understand and that
 you've set up just by blindly following instructions.
 
-Before installing PostgreSQL, double check your locale:
-
-.. code-block:: bash
-
-   locale
-
-Does LC_CTYPE indicate a UTF-8 locale? If yes, proceed to install
-PostgreSQL; if not, read about locales in the Appendix.
-
 .. code-block:: bash
 
    apt install postgresql
 
 This will install PostgreSQL and create a cluster; I will explain later
-what this means. Let's now try to connect to PostgreSQL with a client
-program:
+what this means.
+
+.. warning:: Make sure the locale is right
+
+   When PostgreSQL installs, it uses the encoding specified by the
+   default system locale (found in ``/etc/default/locale``).  If this is
+   not UTF-8, the databases will be using an encoding other than UTF-8.
+   You really don't want that. If you aren't certain, you can check,
+   using the procedure I explained in Chapter 1, that the default system
+   locale is appropriate. You can also check that PostgreSQL was
+   installed with the correct locale with this command:
+
+   .. code-block:: bash
+
+      su postgres -c 'psql -l'
+
+   This will list your databases and some information about them,
+   including their locale. Immediately after installation, there should
+   be three databases (I explain them later on).
+
+   If you make an error and install PostgreSQL while the locale is
+   wrong, the easiest way to fix the problem is to uninstall PostgreSQL
+   and delete all the databases:
+
+   .. code-block:: bash
+
+      apt purge postgresql-common
+
+   ``apt remove`` is the opposite of ``apt install``; it uninstalls
+   packages. ``apt purge`` does the same as ``apt remove``, but in
+   addition it removes data and configuration files. It can be
+   dangerous, as you can lose data. Obviously you shouldn't use it if
+   you have databases with useful data.
+
+   Purging package ``postgresql`` is not enough, because ``postgresql``
+   is just a dependency on another package like ``postgresql-9.4`` (it
+   depends on your operating system version), which is the actual
+   package with the PostgreSQL server. This, in turn, has a dependency
+   on ``postgresql-common``. If you purge ``postgresql-common``, all
+   packages that are dependent on it will also be purged, so purging
+   ``postgresql-common`` is the easiest way to ensure that your
+   PostgreSQL server will be purged.
+
+   The command above should remove all contents of ``/var/lib/postgres``
+   (the directory in which databases are stored), but if in doubt you
+   can remove anything remaining:
+
+   .. code-block:: bash
+
+      rm -rf /var/lib/postgres
+
+   ``rm`` is the Unix command that removes files. With the ``-r`` option
+   it recursively removes directories, and ``-f`` means "ask no
+   questions". Obviously you should be very careful. Accidentally
+   inserting a space, like ``rm -rf / var/lib/postgres``, means it will
+   likely remove everything in the root directory.
+
+   After you purge PostgreSQL, fix your system locale as explained in
+   Chapter 1, then re-install PostgreSQL.
+
+   If you have a database with useful data, obviously you can't just do
+   this. Fixing the problem is more advanced and isn't covered by this
+   chapter; there is a `question at Stackoverflow`_ that treats it, but
+   better finish this chapter first to get a grip on the basics.
+
+   .. _question at Stackoverflow: http://stackoverflow.com/questions/5090858/how-do-you-change-the-character-encoding-of-a-postgres-database
+
+Let's now try to connect to PostgreSQL with a client program:
 
 .. code-block:: bash
 
@@ -165,17 +222,17 @@ server and gets the response from the server.
 
 When you connect to a web server with your browser, you always provide
 the server address in the form of a URL. But here we only provided a
-database name. We could have told it the server (but it's not going to
-work without a fight, because the user authentication kicks in, which I
-explain in the next section):
+database name. We could have told it the server as follows (but it's not
+going to work without a fight, because the user authentication kicks in,
+which I explain in the next section):
 
 .. code-block:: bash
 
    psql --host=localhost --port=5432 template1
 
-You might think that ``localhost`` and 5432 is the default, but it
-isn't. The default is Unix domain socket
-``/var/run/postgresql/.s.PGSQL.5432``. Let's see what this means.
+You might think ``localhost`` and 5432 is the default, but it isn't. The
+default is Unix domain socket ``/var/run/postgresql/.s.PGSQL.5432``.
+Let's see what this means.
 
 If you think about it, TCP is nothing more than a way for different
 processes to communicate. One process, the browser, opens a
@@ -193,11 +250,12 @@ When the PostgreSQL server starts, it creates socket
 ``/var/run/postgresql/.s.PGSQL.5432``. The "5432" is nothing of meaning
 to the system; if the socket had been named
 ``/var/run/postgresql/hello.world``, it would have worked exactly the
-same. The PostgreSQL developers chose to add the "5432" in the name of
-the socket as a convenience, in order to signify that this socket leads
-to the same PostgreSQL server as the one listening on TCP port 5432.
-This is useful in the rare case where many PostgreSQL instances (called
-"clusters", which I explain later) are running on the same machine.
+same. The PostgreSQL developers chose to include the "5432" in the name
+of the socket as a convenience, in order to signify that this socket
+leads to the same PostgreSQL server as the one listening on TCP port
+5432.  This is useful in the rare case where many PostgreSQL instances
+(called "clusters", which I explain later) are running on the same
+machine.
 
 .. hint:: Hidden files
 
@@ -218,7 +276,6 @@ This is useful in the rare case where many PostgreSQL instances (called
    ``/var/run/postgresql``; ``/var/run/postgresql/..`` is the same as
    ``/var/run``). You can use ``-A`` instead of ``-a`` to include all
    hidden files except ``.`` and ``..``.
-
 
 PostgreSQL roles and authentication
 -----------------------------------
@@ -415,7 +472,8 @@ because I only want to do work that is independent of any specific
 database". Since you must connect to a database, you can choose any of
 the three that are always known to exist: ``postgres``, ``template0``,
 and ``template1``. It is a long held custom to connect to ``template1``
-in such cases.
+in such cases (although ``postgres`` is a bit better, but more on that
+below).
 
 The official PostgreSQL documentation explains ``template0`` and
 ``template1`` so perfectly that I will simply copy it here:
@@ -471,6 +529,18 @@ utility programs) do is connect to the ``postgres`` database.  So
 ``postgres`` is actually an empty, dummy database used when a client
 needs to connect to the PostgreSQL server without caring about the
 database.
+
+I hinted above that it is better to use ``psql postgres`` than ``psql
+template1`` (though most people use the latter). The reason is that
+sometimes you may accidentally create tables while being connected to
+the wrong database. It has happened to me more than once to screw up my
+``template1`` database. You don't want to accidentally modify your
+``template1`` database, but it's not a big deal if you modify your
+``postgres`` database. So use that one instead when you want to connect
+with ``psql``. The only reason I so far told you to use the suboptimal
+``psql template1`` is that I thought you would be confused by the many
+instances of "postgres" (there's an operating system user, a PostgreSQL
+user, and a database named thus).
 
 Now let's finally explain what a cluster is. Let's see it with an
 example. Remember that nginx reads ``/etc/nginx/nginx.conf`` and listens

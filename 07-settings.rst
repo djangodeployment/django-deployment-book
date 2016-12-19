@@ -89,7 +89,7 @@ these::
 
 However, the details depend on the provider and the account type you
 have. I don't use my personal email, which is
-antonis@antonischristofdes.com (Runbox requires you to change @ to %
+antonis@antonischristofides.com (Runbox requires you to change @ to %
 when you use it as a user name for login), because my personal password
 would then be in many ``settings.py`` files in many deployed Django
 projects, and I'm not the only administrator of these servers (and even
@@ -145,7 +145,7 @@ To test your settings, start a shell from your Django project:
     "/opt/$DJANGO_PROJECT/venv/bin/python \
     /opt/$DJANGO_PROJECT/manage.py shell"
 
-And enter these commands::
+and enter these commands::
 
     from django.conf import settings
     from django.core.mail import send_mail
@@ -184,7 +184,7 @@ antonis@antonischristofides.com if another Runbox server were to
 subsequently refuse it. If something like this happened, I believe it
 would be a configuration error on behalf of Runbox. But it's very normal
 that ``mail.runbox.com`` will accept an email which will subsequently be
-refused by ntua.gr or Gmail or another downstream provider.
+refused by ntua.gr or Gmail or another provider downstream.
 
 .. _SERVER_EMAIL: https://docs.djangoproject.com/en/1.10/ref/settings/#server-email
 .. _DEFAULT_FROM_EMAIL: https://docs.djangoproject.com/en/1.10/ref/settings/#default-from-email
@@ -221,23 +221,34 @@ Using a local mail server
 Usually I don't configure Django to deliver to the smarthost; instead, I
 install a mail server locally, have Django deliver to the local mail
 server, and configure the local mail server to send the emails to the
-smarthost.  If you are satisfied with what we did so far, it's fine to
-skip this section if you are in a hurry. However, there are three
-reasons why installing a local mail server is better:
+smarthost.  There are several reasons why installing a local mail server
+is better:
 
- 1. While Django attempts to send an error email, if something goes
+ 1. Your server, like all Unix systems, has a scheduler, ``cron``, which
+    is configured to run certain programs at certain times. For example,
+    directory ``/etc/cron.daily`` contains scripts that are executed
+    once per day. Whenever a program run by ``cron`` throws an error
+    message, ``cron`` emails that error message to the administrator.
+    ``cron`` always works with a local mail server. If you don't install
+    a local mail server, you will miss these error messages. In Chapter 9
+    we will setup the backup for your server to run with ``cron``, and
+    you don't want to miss any error messages by your backup system!
+
+ 2. While Django attempts to send an error email, if something goes
     wrong, it fails silently. This behaviour is appropriate (the system
     is in error, it attempts to email its administrator with the
     exception, but sending the email also results in an error; can't do
-    much more).  Suppose, however, that when you try to verify that
-    error emails get sent, as in the previous section, you find out they
-    don't work. What has gone wrong? Nothing is written in any log.
-    Intercepting the communication with ``ngrep`` won't work either,
+    much more).  Suppose, however, that when you try to verify, as we
+    did in the previous section, that error emails work, you find out
+    they don't work. What has gone wrong? Nothing is written in any log.
+    `Intercepting the communication`_ with ``ngrep`` won't work either,
     because it's usually encrypted. If you use a locally installed mail
     server, you will at least be able to look at the local mail server's
     logs.
 
- 2. Sending an error email might take long. The communication line might
+    .. _intercepting the communication: http://djangodeployment.com/2016/10/24/how-to-use-ngrep-to-debug-http-headers/
+
+ 3. Sending an error email might take long. The communication line might
     be slow, or a firewall or the DNS could be misbehaving, and it might
     take several seconds, or even a minute, before Django manages to
     establish a connection to the remote mail server. During this time,
@@ -248,14 +259,6 @@ reasons why installing a local mail server is better:
     reason. If we use a local mail server, Django will deliver the email
     to it very fast and finish its job, and the local mail server will
     queue it and send it when possible.
-
- 3. Your server, like all Unix systems, has a scheduler, ``cron``, which
-    is configured to run certain programs at certain times. For example,
-    directory ``/etc/cron.daily`` contains scripts that are executed
-    once per day. Whenever a program run by ``cron`` throws an error
-    message, ``cron`` emails that error message to the administrator.
-    ``cron`` always works with a local mail server. If you don't install
-    a local mail server, you will miss these error messages.
  
 While the most popular mail servers for Debian and Ubuntu are exim and
 postfix, I don't recommend them. Mail servers are strange beasts. They
@@ -267,10 +270,11 @@ see no great educational value in learning it. I used to run mail
 servers for years but I've got ridden of all of them; it's not worth the
 effort when I can do the same thing at Runbox for € 30 per year. 
 
-Instead, we are going to use ``dma``. It's a small mail server that only
-does what we want; it collects messages in a queue, and sends them to a
-smarthost. It is much easier to configure than the real thing. Install
-it like this:
+Instead, we are going to use ``dma`` (nothing to do with direct memory
+access; this is the DragonFly Mail Agent). It's a small mail server that
+only does what we want; it collects messages in a queue, and sends them
+to a smarthost. It is much easier to configure than the real thing.
+Install it like this:
 
 .. code-block:: bash
 
@@ -302,9 +306,12 @@ Next, open ``/etc/dma/auth.conf`` and add this line::
 
 (These are placeholders of course, which you need to replace.)
 
-Finally, open ``/etc/aliases`` and add this line::
+Next, open ``/etc/aliases`` and add this line::
 
    root: $ADMIN_EMAIL_ADDRESS
+
+Finally, open ``/etc/mailname`` in an editor and make sure it contains
+a single line which contains your domain ($DOMAIN).
 
 Let's test it to see if it works:
 
@@ -338,15 +345,22 @@ The only Django configuration we need is this::
 
    EMAIL_BACKEND = 'django_sendmail_backend.backends.EmailBackend'
 
-The ``dma`` configuration should have been obvious, except for the
-``/etc/aliases`` file. This is not dma-specific, it is also used by
-exim, postfix, and most other mail servers. As its name implies, it
-specifies aliases for email addresses. If ``cron`` decides it needs to
-send an email, the recipient will most likely be a mere ``root``. The
-line we added specifies that ``root`` should be translated to your
-actual email address. For Django, ``/etc/aliases`` doesn't matter, since
-Django will get the recipient email address from the ``ADMINS`` and
-``MANAGERS`` settings.
+The ``dma`` configuration should have been obvious, except for
+``/etc/aliases`` and ``/etc/mailname``. These are not dma-specific, they
+are also used by exim, postfix, and most other mail servers, and
+``/etc/mailname`` may also be used by other programs.
+
+``/etc/aliases`` specifies aliases for email addresses. If ``cron``
+decides it needs to send an email, the recipient will most likely be a
+mere ``root``. The line we added specifies that ``root`` should be
+translated to your actual email address. For Django, ``/etc/aliases``
+doesn't matter, since Django will get the recipient email address from
+the ``ADMINS`` and ``MANAGERS`` settings.
+
+If a program somehow needs to know the domain used for the email of the
+system, it usually takes it from ``/etc/mailname``. Setting that to
+``$DOMAIN`` should be fine, but if this doesn't work, you can try
+setting it to the domain of your email address.
 
 Secret key
 ----------
@@ -427,8 +441,8 @@ Here is the meaning of the various items:
    single formatter (the "default" formatter). In this example I have
    specified ``'level': 'INFO',`` which means the logger will ignore
    messages with a lower priority (the only lower priority is ``DEBUG``,
-   and the higher priorities are ``INFO``, ``WARNING``, ``ERROR``
-   and ``CRITICAL``). You can change this as needed, however ``INFO`` is
+   and the higher priorities are ``WARNING``, ``ERROR`` and
+   ``CRITICAL``). You can change this as needed, however ``INFO`` is
    reasonable to begin with.
 **handlers**
    Here we define the "file" handler, whose class is
@@ -436,7 +450,7 @@ Here is the meaning of the various items:
    file, but it has the added benefit that each midnight it starts a
    new log file, renames the old one, and deletes log files older than
    60 days. In this way it is very unlikely that your disk will fill up
-   because the growing log files escape your attention.
+   because of the growing log files escaping your attention.
 **formatters**
    This defines a formatter named "default". In a system where I'm using
    this logging configuration, I have this code:
@@ -519,19 +533,17 @@ You must make that script executable:
 
 .. code-block:: bash
 
-   chmod ugo+x /usr/local/sbin/restart-$DJANGO_PROJECT
+   chmod 755 /usr/local/sbin/restart-$DJANGO_PROJECT
 
-This means that, for both the owner (u), group (g), and others (o),
-execute permission (x) will be added. You might object that we don't
-want users other than root to be able to recompile the Python files or
-to restart the gunicorn service. The answer is that they won't be able.
-They will be able to execute the script, but when the script arrives at
-the point where it compiles the Python files, they will be denied
-permission to write the compiled Python files to the directory; and if
-the script ever arrives at the last line, again systemd will deny to
-restart the service. Making a script non-executable doesn't achieve
-anything security-wise; a malicious user could simply copy it and make
-the copy executable.
+You might object that we don't want users other than root to be able to
+recompile the Python files or to restart the gunicorn service. The
+answer is that they won't be able.  They will be able to execute the
+script, but when the script arrives at the point where it compiles the
+Python files, they will be denied permission to write the compiled
+Python files to the directory; and if the script ever arrives at the
+last line, again systemd will deny to restart the service. Making a
+script non-executable doesn't achieve anything security-wise; a
+malicious user could simply copy it and make the copy executable.
 
 From now on, whenever you want to restart gunicorn, instead of ``service
 $DJANGO_PROJECT restart``, you can be using ``restart-$DJANGO_PROJECT``,
@@ -542,86 +554,7 @@ to ``compileall`` tells to not print the list of files compiled.
 Chapter summary
 ---------------
 
-The summary of this chapter can best be given as the whole
-``settings.py`` file:
-
-.. code-block:: python
-
-    from DJANGO_PROJECT.settings.base import *
-
-    DEBUG = False
-    ALLOWED_HOSTS = ['$DOMAIN', 'www.$DOMAIN']
-    DATABASES = {
-        'default': {
-            'ENGINE': 'django.db.backends.sqlite3',
-            'NAME': '/var/opt/$DJANGO_PROJECT/$DJANGO_PROJECT.db',
-        }
-    }
-
-    SERVER_EMAIL = 'noreply@$DOMAIN'
-    DEFAULT_FROM_EMAIL = 'noreply@$DOMAIN'
-    ADMINS = [
-        ('$ADMIN_NAME', '$ADMIN_EMAIL_ADDRESS'),
-    ]
-    MANAGERS = ADMINS
-    EMAIL_HOST = '$EMAIL_HOST'
-    EMAIL_HOST_USER = '$EMAIL_HOST_USER'
-    EMAIL_HOST_PASSWORD = '$EMAIL_HOST_PASSWORD'
-    EMAIL_PORT = 587
-    EMAIL_USE_TLS = True
-
-    LOGGING = {
-        'version': 1,
-        'disable_existing_loggers': False,
-        'formatters': {
-            'default': {
-                'format': '[%(asctime)s] %(levelname)s: '
-                          '%(message)s',
-            }
-        },
-        'handlers': {
-            'file': {
-                'class': 'logging.TimedRotatingFileHandler',
-                'filename': '/var/log/$DJANGO_PROJECT/'
-                            '$DJANGO_PROJECT.log',
-                'when': 'midnight',
-                'backupCount': 60,
-                'formatter': 'default',
-            },
-        },
-        'root': {
-            'handlers': ['file'],
-            'level': 'INFO',
-        },
-    }
-
-   CACHES = {
-       'default': {
-           'BACKEND': 'django.core.cache.backends.filebased.'
-                      'FileBasedCache',
-           'LOCATION': '/var/cache/$DJANGO_PROJECT/cache',
-       }
-   }
-
-Also, create the cache directory:
-
-.. code-block:: bash
-
-   mkdir /var/cache/$DJANGO_PROJECT/cache
-   chown $DJANGO_USER /var/cache/$DJANGO_PROJECT/cache
-
-If you decide to use a local mail server:
-  
- * ``apt install dma`` and (in the virtualenv) ``pip install
-   django-sendmail-backend``.
-
- * Remove all settings starting with ``EMAIL_`` from settings, and
-   specify this instead:
-
-   .. code-block:: python
-
-      EMAIL_BACKEND = 'django_sendmail_backend.backends.' \
-                      'EmailBackend'
+ * Install ``dma`` and (in the virtualenv) ``django-sendmail-backend``
 
  * Make sure ``/etc/dma/dma.conf`` has these contents::
 
@@ -636,4 +569,68 @@ If you decide to use a local mail server:
 
       $EMAIL_HOST_USER|$EMAIL_HOST:$EMAIL_HOST_PASSWORD
 
-   Finally, make sure ``/etc/mailname`` contains $DOMAIN.
+   Make sure ``/etc/mailname`` contains $DOMAIN.
+
+ * Create the cache directory:
+
+   .. code-block:: bash
+
+      mkdir /var/cache/$DJANGO_PROJECT/cache
+      chown $DJANGO_USER /var/cache/$DJANGO_PROJECT/cache
+
+ * Finally, this is the whole ``settings.py`` file:
+
+   .. code-block:: python
+
+       from django_project.settings.base import *
+
+       debug = false
+       allowed_hosts = ['$domain', 'www.$domain']
+       databases = {
+           'default': {
+               'engine': 'django.db.backends.sqlite3',
+               'name': '/var/opt/$django_project/$django_project.db',
+           }
+       }
+
+       server_email = 'noreply@$domain'
+       default_from_email = 'noreply@$domain'
+       admins = [
+           ('$admin_name', '$admin_email_address'),
+       ]
+       managers = admins
+       email_backend = 'django_sendmail_backend.backends.' \
+                       'emailbackend'
+
+       logging = {
+           'version': 1,
+           'disable_existing_loggers': false,
+           'formatters': {
+               'default': {
+                   'format': '[%(asctime)s] %(levelname)s: '
+                             '%(message)s',
+               }
+           },
+           'handlers': {
+               'file': {
+                   'class': 'logging.timedrotatingfilehandler',
+                   'filename': '/var/log/$django_project/'
+                               '$django_project.log',
+                   'when': 'midnight',
+                   'backupcount': 60,
+                   'formatter': 'default',
+               },
+           },
+           'root': {
+               'handlers': ['file'],
+               'level': 'info',
+           },
+       }
+
+      caches = {
+          'default': {
+              'backend': 'django.core.cache.backends.filebased.'
+                         'filebasedcache',
+              'location': '/var/cache/$django_project/cache',
+          }
+      }

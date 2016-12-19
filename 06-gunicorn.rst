@@ -11,7 +11,8 @@ popular servers: mod_wsgi, uWSGI, and Gunicorn.
 
 mod_wsgi is for Apache only, and I prefer to use a method that can be
 used with either Apache or nginx. This will make it easier to change the
-web server, should such a need arise.
+web server, should such a need arise. I also find Gunicorn easier to
+setup and maintain.
 
 I used uWSGI for a couple of years and was overwhelmed by its features.
 Many of them duplicate features that already exist in Apache or nginx or
@@ -56,9 +57,9 @@ You can also write it as one long command, like this:
        su $DJANGO_USER -c "/opt/$DJANGO_PROJECT/venv/bin/gunicorn \
        $DJANGO_PROJECT.wsgi:application"
 
-Either of the two versions above will start Gunicorn, which will be listening
-at port 8000, like the Django development server did. Visit http://$DOMAIN/,
-and you should see your Django project in action.
+Either of the two versions above will start Gunicorn, which will be
+listening at port 8000, like the Django development server did. Visit
+http://$DOMAIN/, and you should see your Django project in action.
 
 What actually happens here is that ``gunicorn``, a Python program, does
 something like ``from $DJANGO_PROJECT.wsgi import application``. It uses
@@ -67,7 +68,7 @@ the command line. Open the file
 ``/opt/$DJANGO_PROJECT/$DJANGO_PROJECT/wsgi.py`` to see that
 ``application`` is defined there. In fact, ``application`` is a Python
 callable. Now each time Gunicorn receives an HTTP request, it calls
-``application`` in a standardized way that is specified by the WSGI
+``application()`` in a standardized way that is specified by the WSGI
 specification. The fact that the interface of this function is
 standardized is what permits you to choose between many different Python
 application servers such as Gunicorn, uWSGI, or mod_wsgi, and why each
@@ -78,10 +79,11 @@ The reason we aren't using the Django development server is that it is
 meant for, well, development. It has some neat features for development,
 such as that it serves static files, and that it automatically restarts
 itself whenever the project files change. It is, however, totally
-inadequate for production; for example, it does not support processing
-many requests at the same time, which you really want. Gunicorn, on the
-other hand, does the multi-processing part correctly, leaving to Django
-only the things that Django can do well.
+inadequate for production; for example, it might leave files or
+connections open, and it does not support processing many requests at
+the same time, which you really want. Gunicorn, on the other hand, does
+the multi-processing part correctly, leaving to Django only the things
+that Django can do well.
 
 Gunicorn is actually a web server, like Apache and nginx. However, it
 does only one thing and does it well: it runs Python WSGI-compliant
@@ -158,8 +160,8 @@ Here is what these parameters mean:
 
    The default for this setting is 1. However, even if you use
    ``gevent`` on a single core virtual server, this is such an important
-   setting that it's better to specify it explicitly in order to really
-   know what you are doing.
+   setting that it's better to specify it explicitly and not rely on the
+   default value.
 
 ``--log-file=/var/log/$DJANGO_PROJECT/gunicorn.log``
    I believe this is self-explanatory.
@@ -183,16 +185,15 @@ Here is what these parameters mean:
    the system may be a bit slower even if things work.
 
    The reason is that the front-end web server, Apache or nginx, has
-   been told to forward the requests to http://localhost:8000/. So it
-   will ask the operating system (more exactly, the resolver) what
-   "localhost" means. If the system is IPv6-enabled, the resolver will
-   reply with two results, ``::1``, which is the IPv6 address for the
-   localhost, and ``127.0.0.1``. The web server might then decide to try
-   the IPv6 version first. If Gunicorn has not been configured to listen
-   to that address, then nothing will be listening at port 8000 of ::1,
-   so the connection will be refused. The web server will then probably
-   try the IPv4 version, which will work, but it will have made a
-   useless attempt first.
+   been told to forward the requests to http://localhost:8000/. It will
+   ask the the resolver what "localhost" means. If the system is
+   IPv6-enabled, the resolver will reply with two results, ``::1``,
+   which is the IPv6 address for the localhost, and ``127.0.0.1``. The
+   web server might then decide to try the IPv6 version first. If
+   Gunicorn has not been configured to listen to that address, then
+   nothing will be listening at port 8000 of ::1, so the connection will
+   be refused. The web server will then probably try the IPv4 version,
+   which will work, but it will have made a useless attempt first.
 
    I could make some experiments to determine exactly what happens in
    such cases, and not speak with "maybe" and "probably", but it doesn't
@@ -273,10 +274,10 @@ example, we wanted to start Gunicorn before nginx, we would specify
 specify ``WantedBy=multi-user.target``. A target is a unit type that
 represents a state of the system. The multi-user target is a state all
 GNU/Linux systems reach in normal operations. Desktop systems go beyond
-that to the "graphical" target, which "wants" a multi-user system plus a
-graphical login screen; but we want Gunicorn to start regardless whether
-we have a graphical login screen (we probably don't, as it is a waste of
-resources on a server).
+that to the "graphical" target, which "wants" a multi-user system and
+adds a graphical login screen to it; but we want Gunicorn to start
+regardless whether we have a graphical login screen (we probably don't,
+as it is a waste of resources on a server).
 
 As I already said, you tell systemd to automatically start the service
 at boot (and automatically stop it at system shutdown) in this way:
@@ -318,17 +319,17 @@ configuration, you can do it with either of these commands:
    /etc/init.d/nginx reload
 
 Before systemd, the first program that was started by the kernel was
-``init``. This was much less smarter than systemd and did not know what
-a "service" is. All ``init`` could do was execute programs or scripts.
-So if we wanted to start a service we would write a script that started
-the service and put it in ``/etc/init.d``, and enable it by linking it
-from ``/etc/rc2.d``. When ``init`` brought the system to "runlevel 2",
-the equivalent of systemd's multi-user target, it would execute the
-scripts in ``/etc/rc2.d``. Actually it wasn't ``init`` itself that did
-that, but other programs that ``init`` was configured to run, but this
-doesn't matter. What matters is that the way you would start, stop,
-or restart nginx, or tell it to reload its configuration, or check its
-running status, was this:
+``init``. This was much less smart than systemd and did not know what a
+"service" is. All ``init`` could do was execute programs or scripts.  So
+if we wanted to start a service we would write a script that started the
+service and put it in ``/etc/init.d``, and enable it by linking it from
+``/etc/rc2.d``. When ``init`` brought the system to "runlevel 2", the
+equivalent of systemd's multi-user target, it would execute the scripts
+in ``/etc/rc2.d``. Actually it wasn't ``init`` itself that did that, but
+other programs that ``init`` was configured to run, but this doesn't
+matter. What matters is that the way you would start, stop, or restart
+nginx, or tell it to reload its configuration, or check its running
+status, was this:
 
 .. code-block:: bash
 
@@ -369,7 +370,7 @@ service, because ``service`` is a backwards compatible way to run
 ``systemctl``. You can't manage your service with an ``/etc/init.d``
 script, because we haven't created any such script (and it would have
 been very tedious to do so, which is why we preferred to use supervisor
-before we had systemd). For nginx and apache2, all three ways are
+before we had systemd). For nginx and Apache, all three ways are
 available, because most services packaged with the operating system are
 still managed with init scripts, and systemd has a backwards compatible
 way of dealing with such scripts. In future versions of Debian and

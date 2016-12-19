@@ -15,7 +15,10 @@ It's a good idea to not run Django as root. We will create a user
 specifically for that, and we will give the user the same name as the
 Django project, i.e. ``$DJANGO_PROJECT``. However, in principle it can
 be different, and I will be using ``$DJANGO_USER`` to denote the user
-name, although it might be the same as ``$DJANGO_PROJECT``.
+name, so that you can distinguish when I'm talking about the user and
+when about the project.
+
+Execute this command:
 
 .. code-block:: bash
 
@@ -92,6 +95,7 @@ directory.
 
 We are going to place your project inside ``/opt``. This is a standard
 directory for program files that are not part of the operating system.
+(The ones that are installed by the operating system go to ``/usr``.)
 So, clone or otherwise copy your django project in
 ``/opt/$DJANGO_PROJECT`` or in ``/opt/$REPOSITORY_ROOT``. Do
 this **as the root user**.  Create the virtualenv for your project **as
@@ -134,8 +138,8 @@ The data directory
 As I already hinted, our data directory is going to be
 ``/var/opt/$DJANGO_PROJECT``. It is standard policy for programs
 installed in ``/opt`` to put their data in ``/var/opt``. Most notably,
-we will store media files in there (in a later chapter later).  We will
-also store the SQLite file there. Usually in production we use a
+we will store media files in there (in a later chapter).  We will also
+store the SQLite file there. Usually in production we use a
 different RDBMS, but we will deal with this in a later chapter as well.
 So, let's now prepare the data directory:
 
@@ -178,7 +182,7 @@ later it will have a bit more. Your
 
 .. code-block:: Python
 
-    from $DJANGO_PROJECT.settings.base import *
+    from DJANGO_PROJECT.settings.base import *
 
     DEBUG = True
     ALLOWED_HOSTS = ['$DOMAIN', 'www.$DOMAIN']
@@ -198,7 +202,8 @@ later it will have a bit more. Your
    ``$DJANGO_PROJECT``, ``$DJANGO_USER``, ``$DJANGO_GROUP``, and so on.
    This is, indeed, the reason I chose this notation. However, in some
    places, like in this Python, you have to actually replace it
-   yourself.
+   yourself. (Occasionally I use DJANGO_PROJECT without the leading
+   dollar sign, in order to get the syntax highlighter to work.)
 
 I have assumed that your project uses the convention of having, instead
 of a single ``settings.py`` file, a ``settings`` directory containing
@@ -216,7 +221,9 @@ When the project is set up like this, ``manage.py`` is usually modified
 so that, by default, it uses ``$DJANGO_PROJECT.settings.local`` instead
 of simply ``$DJANGO_PROJECT.settings``. For more information on this
 technique, see Section 5.2, "Using Multiple Settings Files", in the book
-Two Scoops of Django.
+Two Scoops of Django; there's also a `stackoverflow answer`_ about it.
+
+.. _stackoverflow answer: http://stackoverflow.com/questions/1626326/how-to-manage-local-vs-production-settings-in-django/15325966#15325966
 
 Now, people who use this scheme sometimes also have ``production.py`` in
 the settings directory of the repository. Call me a perfectionist (with
@@ -249,16 +256,17 @@ If you don't use this pattern at all, and you have a single
 ``settings.py`` file, you should be importing from that one
 (``$DJANGO_PROJECT.settings``) instead.
 
-Let's now **secure the production settings**. We do not want other users
+Let's now **secure the production settings**. We don't want other users
 of the system to be able to read the file, because it contains sensitive
 information. Maybe not yet, but after a few chapters it is going to have
-the secret key and the password to the database.  At this point, you are
-wondering: what other users? I am the only person using this server, and
-I have created no users. Indeed, now that it's so easy and cheap to get
-small servers and assign a single job to them, this detail is not so
-important as it used to be. However, it is still a good idea to harden
-things a little bit. Maybe a year later you will create a normal user
-account on that server as an unrelated convenience for a colleague.
+the secret key, the password to the database, the password for the email
+server, etc.  At this point, you are wondering: what other users? I am
+the only person using this server, and I have created no users. Indeed,
+now that it's so easy and cheap to get small servers and assign a single
+job to them, this detail is not as important as it used to be. However,
+it is still a good idea to harden things a little bit. Maybe a year
+later you will create a normal user account on that server as an
+unrelated convenience for a colleague.
 
 If your Django project has a vulnerability, an attacker might be able to
 give commands to the system as the user as which the project runs (i.e.
@@ -356,6 +364,37 @@ You can check the permissions of a directory with the ``-d`` option of
 (In the above commands, if you don't use the ``-d`` option it will show
 the contents of the directory instead of the directory itself.)
 
+.. hint:: Unix permissions
+
+   When you list a file or directory with the ``-l`` option of ``ls``,
+   it will show you something like ``-rwxr-xr-x`` at the beginning of
+   the line. The first character is the file type: ``-`` for a file and
+   ``d`` for a directory (there are also some more types, but we won't
+   bother with them). The next nine characters are the permissions:
+   three for the user, three for the group, three for others.
+   ``rwxr-xr-x`` means "the user has permission to read, write and
+   search/execute, the group has permission to read and search/execute
+   but not write, and so do others".
+
+   ``rwxr-xr-x`` can also be denoted as 755. If you substitute 0 in
+   place of a hyphen and 1 in place of r, w and x, you get 111 101 101.
+   In octal, this is 755. Instead of
+
+   .. code-block:: bash
+
+      chmod u=rwx,g=rx,o= /etc/opt/$DJANGO_PROJECT
+
+   you can type
+
+   .. code-block:: bash
+
+      chmod 750 /etc/opt/$DJANGO_PROJECT
+
+   which means exactly the same thing. People use this latter version
+   much more than the other one, because it is so much easier to type,
+   and because converting permissions into octal becomes second nature
+   with a little practice.
+
 Running the Django server
 -------------------------
 
@@ -379,10 +418,38 @@ have already done the ``migrate`` part), like this:
         "/opt/$DJANGO_PROJECT/venv/bin/python \
         /opt/$DJANGO_PROJECT/manage.py runserver 0.0.0.0:8000"
 
+.. hint:: su
+
+   You have probably heard of ``sudo``, which is a very useful program
+   on Unix client machines (desktops and laptops). On server, ``sudo``
+   is less common and we use ``su`` instead
+
+   ``su``, like ``sudo``, changes the user that executes a program. If
+   you are user joe and you execute ``su -c ls``, then ``ls`` is run as
+   root. ``su`` will ask for the root password in order to proceed.
+
+   ``su alice -c ls`` means "execute ``ls`` as user alice". ``su alice``
+   means "start a shell as user alice"; you can then type commands as
+   user alice, and you can enter ``exit`` to "get out" of ``su``, that
+   is, to exit the shell than runs as alice. If you are a normal user
+   ``su`` will ask you for alice's password. If you are root, it will
+   become alice without questions. This should make clear how the ``su``
+   command works when you run the Django server as explained above.
+
+   ``sudo`` works very differently from ``su``. Instead of asking the
+   password of the user you want to become, it asks for your password,
+   and has a configuration file that describes which user is allowed to
+   become what user and with what constraints. It is much more
+   versatile. ``su`` does only what I described and nothing more. ``su``
+   is guaranteed to exist in all Unix systems, whereas ``sudo`` is an
+   add-on that must be installed. By default it is usually installed on
+   client machines, but not on servers. ``su`` is much more commonly
+   used on servers and shell scripts than ``sudo``.
+
 Do you understand that very clearly? If not, here are some tips:
 
- * Make sure you have a grip on virtualenv_, `environment variables`_,
-   and ``su``.
+ * Make sure you have a grip on virtualenv_ and `environment
+   variables`_.
  * Python reads the ``PYTHONPATH`` environment variable and adds
    the specified directories to the Python path.
  * Django reads the ``DJANGO_SETTINGS_MODULE`` environment variable.
@@ -426,11 +493,11 @@ used instead of ``PYTHONPATH``, however it seems that ``--settings``
 doesn't work correctly together with ``--pythonpath``, at least not in
 Django 1.8.)
 
-If you fire up your browser and visit http://$DOMAIN:8000/,
-you should see your Django project in action. Still wrong of course; we
-are still using the Django development server, but we have accomplished
-the first step, which was to use an appropriate user and put stuff in
-appropriate directories.
+If you fire up your browser and visit http://$DOMAIN:8000/, you should
+see your Django project in action. Still wrong of course; we are still
+using the Django development server, but we have accomplished another
+step, which was to use an appropriate user and put stuff in appropriate
+directories.
 
 Chapter summary
 ---------------
@@ -450,6 +517,6 @@ Chapter summary
  * Precompile the files in ``/opt/$DJANGO_PROJECT`` and
    ``/etc/opt/$DJANGO_PROJECT``.
  * Run ``manage.py`` as the system user you created, after setting the
-   environment variable
+   environment variables
    ``PYTHONPATH=/etc/opt/$DJANGO_PROJECT:/opt/$DJANGO_PROJECT`` and
-   setting the environment variable ``DJANGO_SETTINGS_MODULE=settings``.
+   ``DJANGO_SETTINGS_MODULE=settings``.

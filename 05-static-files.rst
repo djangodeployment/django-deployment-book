@@ -13,12 +13,16 @@ Setting up Django
    STATIC_ROOT = '/var/cache/$DJANGO_PROJECT/static/'
    STATIC_URL = '/static/'
 
-Remember that after each change to your settings you need to recompile:
+Remember that after each change to your settings you should, in theory,
+recompile:
 
 .. code-block:: bash
 
    /opt/$DJANGO_PROJECT/venv/bin/python -m compileall \
        /etc/opt/$DJANGO_PROJECT
+
+It's not really a big deal if you forget to recompile, but we will deal
+with that later.
 
 **Second**, create directory ``/var/cache/$DJANGO_PROJECT/static/``:
 
@@ -26,8 +30,8 @@ Remember that after each change to your settings you need to recompile:
 
    mkdir -p /var/cache/$DJANGO_PROJECT/static
 
-The ``-p`` parameter tells ``mkdir`` to create the directory and its
-parents.
+The ``-p`` parameter tells ``mkdir`` to create not only the directory,
+but, if needed, its parents as well.
 
 **Third**, run ``collectstatic``:
 
@@ -163,9 +167,9 @@ matching ``ProxyPass`` directives, the first one wins; so for path
 ``/static/admin/img/icon_searchbox.png``, ``ProxyPass /static/ !`` wins.
 The exclamation mark means "no proxy passing", so the directive means
 "when a URL path begins with ``/static/``, do not pass it to the
-backend". Since it is not going to passed to the backend, Apache would
-normally combine it with the ``DocumentRoot`` and would thus try to
-return the file
+backend". Since it is not going to be passed to the backend, Apache
+would normally combine it with the ``DocumentRoot`` and would thus try
+to return the file
 ``/var/www/$DOMAIN/static/admin/img/icon_searchbox.png``, but the
 ``Alias`` directive tells it to get
 ``/var/cache/$DJANGO_PROJECT/static/admin/img/icon_searchbox.png``
@@ -214,8 +218,7 @@ and the following at the end of the ``VirtualHost`` block:
        Require all granted
    </Directory>
 
-Recompile your settings, change the group of the compiled file, reload
-the web server, and it's ready.
+Recompile your settings, reload the web server, and it's ready.
 
 One of the differences with static files is that we changed the
 ownership of ``/var/opt/$DJANGO_PROJECT/media`` to $DJANGO_USER.
@@ -230,13 +233,13 @@ instead of the Django development server, and I hope you understand
 clearly what we've done. Let's take a break and discuss the file
 locations that I've chosen, which are the following:
 
-============== =========================================
-Program files  /opt/$DJANGO_PROJECT           
+============== =================================
+Program files  /opt/$DJANGO_PROJECT
 Virtualenv     /opt/$DJANGO_PROJECT/venv
-Media files    /var/opt/$DJANGO_PROJECT/media     
-Static files   /var/cache/$DJANGO_PROJECT/static        
-Configuration  /etc/opt/$DJANGO_PROJECT                     
-============== =========================================
+Media files    /var/opt/$DJANGO_PROJECT/media
+Static files   /var/cache/$DJANGO_PROJECT/static
+Configuration  /etc/opt/$DJANGO_PROJECT
+============== =================================
 
 There are a couple more that we haven't seen yet, but the above more or
 less tell the whole story.
@@ -246,15 +249,12 @@ related to their project in a single directory, which is that of their
 repository root, like this:
 
 ============== ====================================
-Program files  /srv/$DJANGO_PROJECT           
+Program files  /srv/$DJANGO_PROJECT
 Virtualenv     /srv/$DJANGO_PROJECT/venv
-Media files    /srv/$DJANGO_PROJECT/media     
-Static files   /srv/$DJANGO_PROJECT/static        
+Media files    /srv/$DJANGO_PROJECT/media
+Static files   /srv/$DJANGO_PROJECT/static
 Configuration  /srv/$DJANGO_PROJECT/$DJANGO_PROJECT
 ============== ====================================
-
-Since ``/srv/$DJANGO_PROJECT`` is the root of the repository working
-directory, they add ``media`` and ``static`` to ``.gitignore``.
 
 Although this setup seems simpler, I have preferred the other one for
 several reasons. The first one is purely educational. When you get too
@@ -275,7 +275,7 @@ directories scheme is minimal. Likewise if you package your application
 into a ``.deb`` package.
 
 Finally, separating the directories makes it easier to backup only what
-is needed. My backup script (which we will see in Chapter 8)
+is needed. My backup solution (which we will see in Chapter 9)
 automatically excludes ``/opt`` and ``/var/cache`` from the backup.
 Since the static files can be regenerated, there is no need to back them
 up.

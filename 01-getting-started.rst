@@ -14,6 +14,112 @@ Before continuing, please make sure you have the necessary background:
    ssh, use scp to copy files, and use some basic commands. If you
    cannot do this, at http://djangodeployment.com/ you will find a free
    email course named "Linux servers 101".
+ * You must understand some basic encryption principles, that is, what
+   is meant by symmetric and asymmetric or public key encryption. My
+   free "Linux servers 101" course also covers this.
+
+Setting up the system locale
+----------------------------
+
+The "locale" is the regional settings, among which the character
+encoding used.  If the character encoding isn't correctly set to UTF-8,
+sooner or later you will run into problems. So checking the system
+locale is pretty much the first thing you should do on a new server.
+
+The procedure is this:
+
+ 1. Open the file ``/etc/locale.gen`` in an editor and make sure the
+    line that begins with "en_US.UTF-8" is uncommented.
+ 2. Enter the command ``locale-gen``; this will (re)generate the
+    locales.
+ 3. Open the file ``/etc/default/locale`` in an editor, and make sure it
+    contains the line ``LANG=en_US.UTF-8``. Changes in this file require
+    logout and login to take effect.
+
+Let me now explain what all this is about. The locale consists of a
+language, a country, and a character encoding; "en_US.UTF-8" means
+English, United States, UTF-8. This tells programs to show messages in
+American English; to format items such as dates in the way it's done in
+the United States; and to use encoding UTF-8.
+
+Different users can be using different locales. If you have a desktop
+computer used by you and your spouse, one could be using English and the
+other French. Each user does this by setting the ``LANG`` environment
+variable to the desired locale; if not, the default system locale is
+used for that user. For servers this feature is less important. While
+your Django application may display the user interface in different
+languages (and format dates and numbers in different ways), this is done
+by Django itself using Django's internationalization and localization
+machinery and has nothing to do with what we are discussing here, which
+affects mostly the programs you type in the command line, such as
+``ls``. Because for servers the feature of users specifying their
+preferred locale isn't so important, we usually merely use the default
+system locale, which is specified in the file ``/etc/default/locale``.
+You can understand English, otherwise you wouldn't be reading this book,
+so "en_US.UTF-8" is fine. If you prefer to use another country, such as
+"en_UK.UTF-8", it's also fine, but it's no big deal, as I will explain
+later on.
+
+Although the system can support a large number of locales, many of these
+are turned off in order to save a little disk space. You turn them on by
+adding or uncommenting them in file ``/etc/locale.gen``. When you
+execute the program ``locale-gen``, it reads ``/etc/locale.gen`` and
+determines which locales are activated, and it compiles these locales
+from their source files, which are relatively small, to some binary
+files that are those actually used by the various programs. We say that
+the locales are "generated". If you activate all locales the binary
+files will be a little bit over 100 M, so the saving is not that big (it
+was important 15 years ago); however they will take quite some time to
+generate. Usually we only activate a few.
+
+To check that everything is right, do this:
+
+ 1. Enter the command ``locale``; everything (except, possibly,
+    ``LANGUAGE`` and ``LC_ALL``) should have the value "en_US.UTF-8".
+ 2. Enter the command ``perl -e ''``; it should do nothing and give no
+    message.
+
+The ``locale`` command merely lists the active locale parameters.
+``LC_CTYPE``, ``LC_NUMERIC`` etc. are called "locale categories", and
+usually they are all set to the same value. In some edge cases they
+might be set to different values; for example, on my laptop I use
+"en_US.UTF-8", but especially for ``LC_TIME`` I use "en_DK.UTF-8", which
+causes Thunderbird to display dates in ISO 8601. This is not our concern
+here and it rarely is on a server. So we don't set any of these
+variables, and they all get their value from ``LANG``, which is set by
+``/etc/default/locale``.
+
+However, sometimes you might make an error; you might specify a locale
+in ``/etc/default/locale``, but you might forget to generate it. In that
+case, the ``locale`` command will indicate that the locale is active,
+but it will not show that anything is wrong. This is the reason I run
+``perl -e ''``.  Perl is a programming language, like Python. The
+command ``perl -e ''``, does nothing; it tells Perl to execute an empty
+program; same thing as ``python -c ''``. However, if there is anything
+wrong with the locale, Perl throws a big warning message; so ``perl -e
+''`` is my favourite way of verifying that my locale works. Try, for
+example, ``LANG=el_GR.UTF-8 perl -e ''`` to see the warning message.  So
+``locale`` shows you which is the active locale, and ``perl -e ''``, if
+silent, indicates that the active locale has been generated and is
+valid.
+
+I told you a short while ago that the country doesn't matter much for
+servers. Neither does the language. What matters is the encoding. You
+want to be able to manipulate all characters of all languages. Even if
+all your customers are English speaking, there may eventually be some
+remark about a Chinese character in a description field. Even if you are
+certain there won't, it doesn't make any sense to constrain yourself to
+an encoding that can represent only a subset of characters when it's
+equally easy to use UTF-8. So you need to make sure you use UTF-8. In
+Chapter 8 we will see that installing PostgreSQL is a process
+particularly sensitive to the system locale settings.
+
+The programs you run at the command line will be producing output in
+your chosen encoding. Your terminal reads the bytes produced by these
+programs and must be able to decode them properly, so it must know how
+they are encoded. In other words, you must set your terminal to UTF-8 as
+well.  Most terminals, including PuTTY and gnome-terminal, are by
+default set to UTF-8, but you can change that in their preferences.
 
 Quickly starting Django on a server
 -----------------------------------
