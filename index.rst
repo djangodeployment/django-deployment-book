@@ -12,3 +12,4 @@ Deploying Django on a single Debian or Ubuntu server
    06-gunicorn
    07-settings
    08-postgresql
+   09-recovery
