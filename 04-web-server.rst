@@ -73,7 +73,7 @@ Create a symbolic link in ``sites-enabled``:
    means "create a symbolic link that points to file
    ``../sites-available/$DOMAIN`` and put the link in the current
    directory (``.``). Two dots denote the parent directory, so when the
-   current direcotry is ``/etc/nginx/sites-enabled``, ``..`` means the
+   current directory is ``/etc/nginx/sites-enabled``, ``..`` means the
    parent, ``/etc/nginx``, whereas ``../sites-available`` means "one up,
    then down into ``sites-available``. A single dot designates the
    current directory.

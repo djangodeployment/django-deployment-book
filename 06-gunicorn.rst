@@ -414,4 +414,3 @@ Chapter summary
  * Enable the service with ``systemctl enable $DJANGO_PROJECT``, and
    start/stop/restart it or get its status with ``systemctl $COMMAND
    $DJANGO_PROJECT``, where $COMMAND is start, stop, restart or status.
-
