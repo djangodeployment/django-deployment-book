@@ -183,53 +183,57 @@ htmlhelp_basename = 'DeployingDjangoonasingleDebianorUbuntuserverdoc'
 
 # -- Options for LaTeX output ---------------------------------------------
 
+import textwrap
+
 latex_elements = {
-# See http://stackoverflow.com/questions/3882770/. We keep the releasename
-# empty instead of its default, "Release", to avoid the word "Release" from
-# appearing in the cover page.
-'releasename': '',
+    # See http://stackoverflow.com/questions/3882770/. We keep the releasename
+    # empty instead of its default, "Release", to avoid the word "Release" from
+    # appearing in the cover page.
+    'releasename': '',
 
-# The paper size ('letterpaper' or 'a4paper').
-'papersize': 'a5paper',
+    # The paper size ('letterpaper' or 'a4paper').
+    'papersize': 'a5paper',
 
-# The font size ('10pt', '11pt' or '12pt').
-#'pointsize': '10pt',
+    # The font size ('10pt', '11pt' or '12pt').
+    #'pointsize': '10pt',
 
-# Minor changes in Latex formatting
-'preamble': r'''
+    # In order to include some information in the inner cover page, we manually
+    # insert a table of contents in main_toctree.rst, so we tell it to not
+    # generate the one it would normally generate.
+    'tableofcontents': '',
 
-% Margins 2cm, useful for a5paper, must be changed in other sizes
-\usepackage{anysize}
-\marginsize{2cm}{2cm}{2cm}{2cm}
+    # Minor changes in Latex formatting
+    'preamble': textwrap.dedent(r'''
+        % Margins 2cm, useful for a5paper, must be changed in other sizes
+        \usepackage{anysize}
+        \marginsize{2cm}{2cm}{2cm}{2cm}
 
-% Use txtt fontface for verbatim, and make it slightly smaller if inline
-\renewcommand{\code}[1]{\texttt{\small{#1}}}
-\renewcommand{\ttdefault}{txtt}
+        % Use txtt fontface for verbatim, and make it slightly smaller if inline
+        \renewcommand{\code}[1]{\texttt{\small{#1}}}
+        \renewcommand{\ttdefault}{txtt}
 
-% See http://stackoverflow.com/questions/3882770/. We've copied the following
-% from sphinx.sty, and changed it so that it does not show the release name in
-% the page header.
+        % See http://stackoverflow.com/questions/3882770/. We've copied the following
+        % from sphinx.sty, and changed it so that it does not show the release name in
+        % the page header.
 
-\makeatletter
+        \makeatletter
 
-  \fancypagestyle{normal}{
-    \fancyhf{}
-    \fancyfoot[LE,RO]{{\py@HeaderFamily\thepage}}
-    \fancyfoot[LO]{{\py@HeaderFamily\nouppercase{\rightmark}}}
-    \fancyfoot[RE]{{\py@HeaderFamily\nouppercase{\leftmark}}}
-    \fancyhead[LE,RO]{{\py@HeaderFamily \@title}}
-    \renewcommand{\headrulewidth}{0.4pt}
-    \renewcommand{\footrulewidth}{0.4pt}
-    % define chaptermark with \@chappos when \@chappos is available for Japanese
-    \ifx\@chappos\undefined\else
-      \def\chaptermark##1{\markboth{\@chapapp\space\thechapter\space\@chappos\space ##1}{}}
-    \fi
-  }
+        \fancypagestyle{normal}{
+            \fancyhf{}
+            \fancyfoot[LE,RO]{{\py@HeaderFamily\thepage}}
+            \fancyfoot[LO]{{\py@HeaderFamily\nouppercase{\rightmark}}}
+            \fancyfoot[RE]{{\py@HeaderFamily\nouppercase{\leftmark}}}
+            \fancyhead[LE,RO]{{\py@HeaderFamily \@title}}
+            \renewcommand{\headrulewidth}{0.4pt}
+            \renewcommand{\footrulewidth}{0.4pt}
+            % define chaptermark with \@chappos when \@chappos is available for Japanese
+            \ifx\@chappos\undefined\else
+            \def\chaptermark##1{\markboth{\@chapapp\space\thechapter\space\@chappos\space ##1}{}}
+            \fi
+        }
 
-\makeatother
-
-'''
-
+        \makeatother
+        '''),
 }
 
 # Grouping the document tree into LaTeX files. List of tuples
