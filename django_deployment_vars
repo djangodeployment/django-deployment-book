@@ -8,3 +8,8 @@ ADMIN_EMAIL_ADDRESS=antonis@djangodeployment.com
 EMAIL_HOST=mail.runbox.com
 EMAIL_HOST_USER=smarthostclient%antonischristofides.com
 EMAIL_HOST_PASSWORD=topsecret
+
+NICK=aptiko
+SERVER_NAME=test2245
+ACCOUNT_ID=123456789abcdef0
+APPLICATION_KEY=topsecret

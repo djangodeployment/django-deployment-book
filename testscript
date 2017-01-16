@@ -345,3 +345,60 @@ EOF1
 echo "$EMAIL_HOST_USER|$EMAIL_HOST:$EMAIL_HOST_PASSWORD" >/etc/dma/auth.conf
 echo "$DOMAIN" >/etc/mailname
 restart-$DJANGO_PROJECT
+
+#
+# POSTGRESQL missing
+#
+
+#
+# RECOVERY
+#
+
+apt install -y duply
+mkdir -p /etc/duply/main
+chmod 700 /etc/duply/main
+cat <<-EOF1 >/etc/duply/main/conf
+	GPG_KEY='disabled'
+
+	SOURCE='/'
+	TARGET='b2://$ACCOUNT_ID:$APPLICATION_KEY@$NICK-backup/$SERVER_NAME/'
+
+	MAX_AGE=2Y
+	MAX_FULL_BACKUPS=8
+	MAX_FULLS_WITH_INCRS=1
+
+	MAX_FULLBKP_AGE=2Y
+	DUPL_PARAMS='\$DUPL_PARAMS --full-if-older-than \$MAX_FULLBKP_AGE '
+
+	VERBOSITY=2
+	ARCH_DIR='/var/cache/duplicity/duply_main/'
+EOF1
+cat <<-EOF1 >/etc/duply/main/exclude
+	- /dev
+	- /proc
+	- /sys
+	- /run
+	- /var/lock
+	- /var/run
+	- /lost+found
+	- /boot
+	- /tmp
+	- /var/tmp
+	- /media
+	- /mnt
+	- /var/cache
+	- /var/crash
+	- /var/swap
+	- /var/swapfile
+	- /var/swap.img
+	- /var/lib/mysql
+	- /var/lib/postgres
+EOF1
+cat <<-EOF1 >/etc/duply/main/pre
+	#!/bin/bash
+	su postgres -c 'pg_dumpall --file=/var/backups/postgresql.dump'
+	echo '.dump' | \
+		sqlite3 /var/opt/$DJANGO_PROJECT/$DJANGO_PROJECT.db \
+			>/var/backups/sqlite-$DJANGO_PROJECT.dump
+EOF1
+chmod 755 /etc/duply/main/pre
