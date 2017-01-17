@@ -364,13 +364,11 @@ cat <<-EOF1 >/etc/duply/main/conf
 	TARGET='b2://$ACCOUNT_ID:$APPLICATION_KEY@$NICK-backup/$SERVER_NAME/'
 
 	MAX_AGE=2Y
-	MAX_FULL_BACKUPS=8
-	MAX_FULLS_WITH_INCRS=1
+	MAX_FULLS_WITH_INCRS=2
+	MAX_FULLBKP_AGE=3M
+	DUPL_PARAMS="\$DUPL_PARAMS --full-if-older-than \$MAX_FULLBKP_AGE "
 
-	MAX_FULLBKP_AGE=2Y
-	DUPL_PARAMS='\$DUPL_PARAMS --full-if-older-than \$MAX_FULLBKP_AGE '
-
-	VERBOSITY=2
+	VERBOSITY=warning
 	ARCH_DIR='/var/cache/duplicity/duply_main/'
 EOF1
 cat <<-EOF1 >/etc/duply/main/exclude
@@ -386,6 +384,13 @@ cat <<-EOF1 >/etc/duply/main/exclude
 	- /var/tmp
 	- /media
 	- /mnt
+        - /usr
+        - /opt
+        - /bin
+        - /sbin
+        - /lib
+        - /lib32
+        - /lib64
 	- /var/cache
 	- /var/crash
 	- /var/swap
@@ -402,3 +407,10 @@ cat <<-EOF1 >/etc/duply/main/pre
 			>/var/backups/sqlite-$DJANGO_PROJECT.dump
 EOF1
 chmod 755 /etc/duply/main/pre
+cat <<-EOF1 >/etc/cron.daily/duply
+	#!/bin/bash
+	duply main purge --force >/tmp/duply.out
+	duply main purgeIncr --force >>/tmp/duply.out
+	duply main backup >>/tmp/duply.out
+EOF1
+chmod 755 /etc/cron.daily/duply

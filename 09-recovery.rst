@@ -260,7 +260,7 @@ With duply you can create many different configurations which it calls
 why we created directory ``/etc/duply/main``. Inside it, create a file
 called ``conf``, with the following contents:
 
-.. code-block:: python
+.. code-block:: ini
 
     GPG_KEY='disabled'
 
@@ -268,13 +268,11 @@ called ``conf``, with the following contents:
     TARGET='b2://$ACCOUNT_ID:$APPLICATION_KEY@$NICK-backup/$SERVER_NAME/'
 
     MAX_AGE=2Y
-    MAX_FULL_BACKUPS=8
-    MAX_FULLS_WITH_INCRS=1
+    MAX_FULLS_WITH_INCRS=2
+    MAX_FULLBKP_AGE=3M
+    DUPL_PARAMS="$DUPL_PARAMS --full-if-older-than $MAX_FULLBKP_AGE "
 
-    MAX_FULLBKP_AGE=2Y
-    DUPL_PARAMS='$DUPL_PARAMS --full-if-older-than $MAX_FULLBKP_AGE '
-
-    VERBOSITY=2
+    VERBOSITY=warning
     ARCH_DIR='/var/cache/duplicity/duply_main/'
 
 Also create a file ``/etc/duply/main/exclude``, with the following
@@ -329,9 +327,9 @@ Let's check again the duply configuration file,
     MAX_AGE=2Y
     MAX_FULLS_WITH_INCRS=2
     MAX_FULLBKP_AGE=3M
-    DUPL_PARAMS='$DUPL_PARAMS --full-if-older-than $MAX_FULLBKP_AGE '
+    DUPL_PARAMS="$DUPL_PARAMS --full-if-older-than $MAX_FULLBKP_AGE "
 
-    VERBOSITY=2
+    VERBOSITY=warning
     ARCH_DIR='/var/cache/duplicity/duply_main/'
 
 **GPG_KEY='disabled'**
@@ -398,6 +396,22 @@ Let's check again the duply configuration file,
     to lose some data and realize it some time later. If each backup
     simply overwrote the previous one, and you realized today that you
     had accidentally deleted a file four days ago, you'd be in trouble.
+
+**DUPL_PARAMS="$DUPL_PARAMS ..."**
+    If you want to add any parameters to duplicity that have not been
+    foreseen in duply, you can specify them in ``DUPL_PARAMS``. Duply
+    just takes the value of ``DUPL_PARAMS`` and adds it to the duplicity
+    command line. Duply does not directly support ``MAX_FULLBKP_AGE``,
+    so we need to manually add it to ``DUPL_PARAMS``.
+
+    The ``$DUPL_PARAMS`` and ``$MAX_FULLBKP_AGE`` should be included
+    literally in the file, the aren't placeholders such as ``$NICK``,
+    ``$ACCOUNT_ID`` and ``$APPLICATION_KEY``
+    
+**VERBOSITY=warning**
+    Options are error, warning, notice, info, and debug. "warning" will
+    show warnings and errors; "notice" will show notices and warnings
+    and errors; and so on. "warning" is usually fine.
 
 **ARCH_DIR='/var/cache/duplicity/duply_main/'**
     Duplicity keeps a cache on the local machine that helps it know what
@@ -892,5 +906,126 @@ to a file.
 Running scheduled backups
 -------------------------
 
-Restoring a single file or directory
-------------------------------------
+Create file ``/etc/cron.daily/duply`` with the following contents:
+
+.. code-block:: bash
+
+   #!/bin/bash
+   duply main purge --force >/tmp/duply.out
+   duply main purgeIncr --force >>/tmp/duply.out
+   duply main backup >>/tmp/duply.out
+
+Make the file executable:
+
+.. code-block:: bash
+
+   chmod 755 /etc/cron.daily/duply
+
+In Unixlike systems, cron is the standard scheduler; it executes tasks
+at specified times. Scripts in ``/etc/cron.daily`` are executed once
+daily, starting at 06:25 (am) local time. The time to which this
+actually refers depends on the system's time zone, which you can find by
+examining the contents of the file ``/etc/timezone``. In most of my
+servers, I use UTC. Backup time doesn't really matter much, but it's
+better to do it when the system is not very busy. For eastern time
+zones, 06:25 UTC could be a busy time, so you might want to change the
+system time zone with this command:
+
+.. code-block:: bash
+
+   dpkg-reconfigure tzdata
+
+There is a way to tell cron exactly at what time you want a task to run,
+but I won't go into that as throwing stuff in ``/etc/cron.daily`` should
+be sufficient for most use cases.
+
+In the ``/etc/cron.daily/duply`` script, the first command, ``purge``,
+will delete full backups that are older than ``MAX_AGE``. The second
+command, ``purgeIncr``, will delete incremental backups that build on
+full backups that are older than ``MAX_FULLS_WITH_INCRS``. Finally, the
+third command, ``backup``, will perform an incremental backup, unless a
+full backup is due. A full backup is due if you have never backed up in
+the past, or if the latest full backup was done more than
+``MAX_FULLBKP_AGE`` ago.
+
+Cron expects all the programs it runs to be silent, i.e., to not display
+any output. If they do display output, cron emails that output to the
+administrator. This is very neat, because if your tasks only display
+output when there is an error, you will be emailed only when there is an
+error.
+
+Duply, however, displays a lot of information even when everything's
+working fine. For this reason, we redirect its output to a file,
+``/tmp/duply.out``. We only redirect its standard output, not its
+standard error, which means that error (and warning) messages will still
+be caught by cron and email. Note, however, that ``/tmp/duply.out`` is
+not a complete log file, because it only contains the standard output,
+not the standard error. It might have been better to include both output
+and error in ``/tmp/duply.out``, and in addtion display the standard
+error, so that cron can catch it; however, this requires more advanced
+shell scripting techniques and it's more trouble than it's worth.
+
+The redirection for the first command, ``>/tmp/duply.out``, overwrites
+``/tmp/duply.out`` if it already exists. The redirection for the next
+two commands, ``>>/tmp/duply.out``, appends to the file.
+
+Restoring a file or directory
+-----------------------------
+
+You made some changes to ``/etc/opt/$DJANGO_PROJECT/settings.py`` and
+you want it back? No problem:
+
+.. code-block:: bash
+
+   duply main fetch etc/opt/$DJANGO_PROJECT/settings.py \
+      /tmp/restored_settings.py
+
+This will fetch the most recent version of the file from backup and will
+put it in ``/tmp/restored_settings.py``. Note that when you specify the
+source file there is no leading slash.
+
+You can also fetch previous versions of the file:
+
+.. code-block:: bash
+
+   # Fetch it as it was 4 days ago
+   duply main fetch etc/opt/$DJANGO_PROJECT/settings.py \
+      /tmp/restored_settings.py 4D
+
+   # Fetch it as it was on 4 January 2017
+   duply main fetch etc/opt/$DJANGO_PROJECT/settings.py \
+      /tmp/restored_settings.py 2017-01-04
+
+Here is how to restore all the backup into ``/tmp/restored_files``:
+
+.. code-block:: bash
+
+   duply main restore /tmp/restored_files
+
+As before, you can append age specifiers such as ``4D`` or
+``2017-01-04`` to the command. Note that restoring a large backup can
+incur charges by your backup storage provider.
+
+You should probably never restore files directly to their original
+location. Instead, restore into ``/tmp`` or ``/var/tmp`` and move 
+or copy them.
+
+Restoring databases
+-------------------
+
+Restoring an entire system
+--------------------------
+
+Includes recovery plan
+
+Recovery testing
+----------------
+
+Copying offline
+---------------
+
+Recovering from offline backups
+-------------------------------
+
+Chapter summary
+---------------
