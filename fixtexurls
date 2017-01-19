@@ -1,0 +1,24 @@
+#!/usr/bin/env python
+r'''
+When given latex as its input, it removes \url{X} and converts it to X for all
+X that contain a dollar sign. Throws results in the output. Assumes \url{}
+doesn't cross line boundaries, which appears to be true.
+
+This is necessary, otherwise some strange code appears inside the URLs (and
+it's also made a link, which doesn't make sense).
+'''
+
+import re
+import sys
+
+regexp = re.compile(r'''\\url\{
+                          (
+                            [^}]*  # Anything (but end of url),
+                            \$     # then a dollar sign,
+                            [^}]*  # then anything (but end of url)
+                          )
+                        \}          # then end of url
+    ''', flags=re.VERBOSE)
+
+for line in sys.stdin:
+    sys.stdout.write(re.sub(regexp, r'\1', line))
