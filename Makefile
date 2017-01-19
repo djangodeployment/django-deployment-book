@@ -1,6 +1,9 @@
 # Makefile for Sphinx documentation
 #
 
+# Custom variables
+BASEFILENAME = DeployingDjangoonasingleDebianorUbuntuserver
+
 # You can set these variables from the command line.
 SPHINXOPTS    =
 SPHINXBUILD   = sphinx-build
@@ -105,6 +108,8 @@ epub:
 
 latex:
 	$(SPHINXBUILD) -b latex $(ALLSPHINXOPTS) $(BUILDDIR)/latex
+	./fixtexurls <$(BUILDDIR)/latex/${BASEFILENAME}.tex >/tmp/${BASEFILENAME}.tex
+	mv /tmp/${BASEFILENAME}.tex $(BUILDDIR)/latex/${BASEFILENAME}.tex
 	@echo
 	@echo "Build finished; the LaTeX files are in $(BUILDDIR)/latex."
 	@echo "Run \`make' in that directory to run these through (pdf)latex" \
@@ -112,6 +117,8 @@ latex:
 
 latexpdf:
 	$(SPHINXBUILD) -b latex $(ALLSPHINXOPTS) $(BUILDDIR)/latex
+	./fixtexurls <$(BUILDDIR)/latex/${BASEFILENAME}.tex >/tmp/${BASEFILENAME}.tex
+	mv /tmp/${BASEFILENAME}.tex $(BUILDDIR)/latex/${BASEFILENAME}.tex
 	@echo "Running LaTeX files through pdflatex..."
 	$(MAKE) -C $(BUILDDIR)/latex all-pdf
 	@echo "pdflatex finished; the PDF files are in $(BUILDDIR)/latex."
