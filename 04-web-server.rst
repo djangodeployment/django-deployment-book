@@ -98,11 +98,11 @@ Create a symbolic link in ``sites-enabled``:
    While the order of arguments in the ``ln`` command may seem strange
    at first, it is consistent with the order of arguments in the ``cp``
    command which merely copies files. Just as ``cp source destination``
-   copies file ``source`` to file ``destination``, similarly ``ln -s
+   copies file ``source`` to file ``destination``, similarly ``ln -s``
    is like making a copy of the file, but instead of an actual copy, it
    creates a symbolic link.
 
-   If you list files with `ls -l`, it is clearly indicated
+   If you list files with ``ls -l``, it is clearly indicated
    which file the symbolic link points to. The permissions of the link,
    ``rwxrwxrwx``, may seem insecure, but they are actually irrelevant;
    it is the permissions of the actual file that count.
