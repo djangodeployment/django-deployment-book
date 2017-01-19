@@ -142,7 +142,10 @@ have the habit of using the SECRET_KEY as the database password, but in
 principle all these can be different; so I will be using these different
 placeholders here to signal to you that they denote something different.
 
-.. code-block:: sql
+.. We use "text" instead of "sql" in the following code block because
+   the highlighter is confused by the placeholders and shows warnings.
+
+.. code-block:: text
 
    CREATE USER $DJANGO_DB_USER PASSWORD '$DJANGO_DB_PASSWORD';
    CREATE DATABASE $DJANGO_DATABASE OWNER $DJANGO_DB_USER;
@@ -411,7 +414,10 @@ happens that PostgreSQL and Django run on the same machine there.
 Remember that when we created the $DJANGO_DATABASE database, we made
 $DJANGO_DB_USER its owner?
 
-.. code-block:: sql
+.. We use "text" instead of "sql" in the following code block because
+   the highlighter is confused by the placeholders and shows warnings.
+
+.. code-block:: text
 
    CREATE DATABASE $DJANGO_DATABASE OWNER $DJANGO_DB_USER;
 
@@ -455,7 +461,10 @@ finish this up I only need to explain why we told it to connect to the
 The thing is, there was actually no theoretical need to connect to a
 database. The only two commands we gave it were these:
 
-.. code-block:: sql
+.. We use "text" instead of "sql" in the following code block because
+   the highlighter is confused by the placeholders and shows warnings.
+
+.. code-block:: text
 
    CREATE USER $DJANGO_DB_USER PASSWORD '$DJANGO_DB_PASSWORD';
    CREATE DATABASE $DJANGO_DATABASE OWNER $DJANGO_DB_USER;
