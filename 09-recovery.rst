@@ -76,9 +76,9 @@ card might be cancelled, and you'd fail to receive the emails, and the
 providers might delete the server and the backups at the same time.  Or
 the whole system, regardless its safety checks and everything, might
 have a bug somewhere. Our experience of the last 20 years does not
-indicate that systems are getting safer; on the contrary.  Heartbleed
-and shellshock showed how vulnerable the whole Internet is; and the next
-such problem is just waiting to be discovered.
+indicate that systems are getting safer; on the contrary.  Heartbleed_
+and Shellshock_ showed how vulnerable the whole Internet is; and the
+next such problem is just waiting to be discovered.
 
 The only way to be reasonably certain that your data is safe is if the
 backup is offline, on a medium you can actually touch, disconnected from
@@ -89,6 +89,9 @@ What I do is backup my systems online daily, but I also copy the backup
 to a disk once a month, and I take the disk offline. The next month I
 use another disk. I reuse older disks eventually, so I have a total of
 about ten backup disks. I will tell you more about it later on.
+
+.. _heartbleed: https://en.wikipedia.org/wiki/Heartbleed
+.. _shellshock: https://en.wikipedia.org/wiki/Shellshock_%28software_bug%29
 
 Estimating storage cost
 -----------------------
