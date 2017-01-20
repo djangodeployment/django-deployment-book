@@ -33,7 +33,7 @@ you test your recovery.
 
 Untested recovery always takes way longer than you think. When you have
 written down the recovery procedure and you have tested it, you may be
-able to recovery within a couple of hours or even a few minutes, with
+able to recover within a couple of hours or even a few minutes, with
 minimal stress. It can be part of your day-to-day work and not a huge
 event. Without a written procedure, or with an untested procedure, you
 will be sweating over your keyboard for a whole day or more, while your
@@ -172,6 +172,8 @@ will show you your Account ID. If you don't know your Application Key
 Take note of both your Account ID and your Application Key; we will need
 them later. I will be calling them $ACCOUNT_ID and $APPLICATION_KEY.
 
+.. _setting_up_duplicity_and_duply:
+
 Setting up duplicity and duply
 ------------------------------
 
@@ -263,12 +265,12 @@ With duply you can create many different configurations which it calls
 why we created directory ``/etc/duply/main``. Inside it, create a file
 called ``conf``, with the following contents:
 
-.. code-block:: ini
+.. code-block:: bash
 
-    GPG_KEY='disabled'
+    GPG_KEY=disabled
 
-    SOURCE='/'
-    TARGET='b2://$ACCOUNT_ID:$APPLICATION_KEY@$NICK-backup/$SERVER_NAME/'
+    SOURCE=/
+    TARGET=b2://$ACCOUNT_ID:$APPLICATION_KEY@$NICK-backup/$SERVER_NAME/
 
     MAX_AGE=2Y
     MAX_FULLS_WITH_INCRS=2
@@ -276,7 +278,36 @@ called ``conf``, with the following contents:
     DUPL_PARAMS="$DUPL_PARAMS --full-if-older-than $MAX_FULLBKP_AGE "
 
     VERBOSITY=warning
-    ARCH_DIR='/var/cache/duplicity/duply_main/'
+    ARCH_DIR=/var/cache/duplicity/duply_main/
+
+.. warning:: Syntax is bash
+
+   The duply configuration file is neither Python (such as
+   ``settings.py``) nor an ini-style file; it is a shell script. This
+   notably means that, when defining variables, there can be no space on
+   either side of the equals sign ('='). Strings need to be quoted only
+   if they contain spaces, so, for example, the following three
+   definitions are exactly the same:
+
+   .. code-block:: bash
+
+      GREETING=hello
+      GREETING="hello"
+      GREETING='hello'
+
+   However, variables are replaced inside double quotes, but not inside
+   single quotes:
+
+   .. code-block:: bash
+
+      WHO=world
+      GREETING1="hello, $WHO"
+      GREETING2='hello, $WHO'
+   
+   After this is run, ``GREETING1`` will have the value ``hello,
+   world``, whereas ``GREETING2`` will be ``hello, $WHO``. You can
+   experiment by simply typing these commands in the shell prompt, and
+   examine the values of variables with ``echo $GREETING1`` and so on.
 
 Also create a file ``/etc/duply/main/exclude``, with the following
 contents::
@@ -320,7 +351,7 @@ Duply configuration
 Let's check again the duply configuration file,
 ``/etc/duply/main/conf``:
 
-.. code-block:: ini
+.. code-block:: bash
 
     GPG_KEY='disabled'
 
@@ -985,7 +1016,7 @@ Chapter summary
  * Create configuration file ``/etc/duply/main/conf`` with these
    contents:
 
-   .. code-block:: ini
+   .. code-block:: bash
 
       GPG_KEY='disabled'
 

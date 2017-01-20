@@ -8,6 +8,8 @@ project in a proper place.
 I will be using ``$DJANGO_PROJECT`` as the name of your Django
 project.
 
+.. _creating_user:
+
 Creating a user and group
 -------------------------
 
@@ -70,6 +72,8 @@ Here is why we use these parameters:
     can't run any commands. We want the user to have the most common
     shell used in GNU/Linux systems, ``/bin/bash``.
 
+.. _the_program_files:
+
 The program files
 -----------------
 
@@ -96,7 +100,7 @@ directory.
 We are going to place your project inside ``/opt``. This is a standard
 directory for program files that are not part of the operating system.
 (The ones that are installed by the operating system go to ``/usr``.)
-So, clone or otherwise copy your django project in
+So, clone or otherwise copy your Django project in
 ``/opt/$DJANGO_PROJECT`` or in ``/opt/$REPOSITORY_ROOT``. Do
 this **as the root user**.  Create the virtualenv for your project **as
 the root user** as well:
@@ -153,6 +157,8 @@ Besides creating the directory, we also changed its owner to
 write data in that directory, and it will be running as that user, so it
 needs permission to do so.
 
+.. _the_log_directory:
+
 The log directory
 -----------------
 
@@ -163,7 +169,6 @@ Later we will setup our Django project to write to log files in
 
     mkdir -p /var/log/$DJANGO_PROJECT
     chown $DJANGO_USER /var/log/$DJANGO_PROJECT
-
 
 The production settings
 -----------------------

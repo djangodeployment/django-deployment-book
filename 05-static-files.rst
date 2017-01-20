@@ -4,6 +4,8 @@ Static and media files
 Let's quickly make static files work. You might not understand perfectly
 what we're doing, but it will become very clear afterwards.
 
+.. _setting_up_django:
+
 Setting up Django
 -----------------
 

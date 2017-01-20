@@ -183,6 +183,9 @@ things happen:
     mydomain.co.uk, the upstream name servers are those responsible for
     .co.uk.
 
+ 
+.. _adding_dns_records:
+
 Adding records to your domain
 -----------------------------
 
@@ -368,6 +371,8 @@ easily fills in several books by itself. It will work well if you are
 gentle with it. If you want to do something more advanced and you don't
 really know what you are doing, ask for help from an expert if you can't
 afford the downtime.
+
+.. _editing_the_hosts_file:
 
 Editing the hosts file
 ----------------------

@@ -468,6 +468,8 @@ Here is the meaning of the various items:
 
       [2016-11-29 04:40:02,880] INFO: Notifying user aptiko about the agrifields of user aptiko
 
+.. _caching:
+
 Caching
 -------
 

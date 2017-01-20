@@ -384,13 +384,13 @@ cat <<-EOF1 >/etc/duply/main/exclude
 	- /var/tmp
 	- /media
 	- /mnt
-        - /usr
-        - /opt
-        - /bin
-        - /sbin
-        - /lib
-        - /lib32
-        - /lib64
+	- /usr
+	- /opt
+	- /bin
+	- /sbin
+	- /lib
+	- /lib32
+	- /lib64
 	- /var/cache
 	- /var/crash
 	- /var/swap
