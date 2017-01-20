@@ -1,5 +1,5 @@
-Recovery
-========
+Recovery part 1
+===============
 
 Why "recovery"?
 ---------------
@@ -972,63 +972,80 @@ The redirection for the first command, ``>/tmp/duply.out``, overwrites
 ``/tmp/duply.out`` if it already exists. The redirection for the next
 two commands, ``>>/tmp/duply.out``, appends to the file.
 
-Restoring a file or directory
------------------------------
-
-You made some changes to ``/etc/opt/$DJANGO_PROJECT/settings.py`` and
-you want it back? No problem:
-
-.. code-block:: bash
-
-   duply main fetch etc/opt/$DJANGO_PROJECT/settings.py \
-      /tmp/restored_settings.py
-
-This will fetch the most recent version of the file from backup and will
-put it in ``/tmp/restored_settings.py``. Note that when you specify the
-source file there is no leading slash.
-
-You can also fetch previous versions of the file:
-
-.. code-block:: bash
-
-   # Fetch it as it was 4 days ago
-   duply main fetch etc/opt/$DJANGO_PROJECT/settings.py \
-      /tmp/restored_settings.py 4D
-
-   # Fetch it as it was on 4 January 2017
-   duply main fetch etc/opt/$DJANGO_PROJECT/settings.py \
-      /tmp/restored_settings.py 2017-01-04
-
-Here is how to restore all the backup into ``/tmp/restored_files``:
-
-.. code-block:: bash
-
-   duply main restore /tmp/restored_files
-
-As before, you can append age specifiers such as ``4D`` or
-``2017-01-04`` to the command. Note that restoring a large backup can
-incur charges by your backup storage provider.
-
-You should probably never restore files directly to their original
-location. Instead, restore into ``/tmp`` or ``/var/tmp`` and move 
-or copy them.
-
-Restoring databases
--------------------
-
-Restoring an entire system
---------------------------
-
-Includes recovery plan
-
-Recovery testing
-----------------
-
-Copying offline
----------------
-
-Recovering from offline backups
--------------------------------
-
 Chapter summary
 ---------------
+
+ * Keep some offline backups and regularly test recovery (the next
+   chapter deals with these).
+ * Calculate storage costs. Backup storage can cost considerably more
+   than main storage.
+ * Create a bucket in your backup storage. A single bucket for all your
+   deployments is probably enough. You can name it ``$NICK-backup``.
+ * Install duply, create directory ``/etc/duply/main``, and chmod it to 700.
+ * Create configuration file ``/etc/duply/main/conf`` with these
+   contents:
+
+   .. code-block:: ini
+
+      GPG_KEY='disabled'
+
+      SOURCE='/'
+      TARGET='b2://$ACCOUNT_ID:$APPLICATION_KEY@$NICK-backup/$SERVER_NAME/'
+
+      MAX_AGE=2Y
+      MAX_FULLS_WITH_INCRS=2
+      MAX_FULLBKP_AGE=3M
+      DUPL_PARAMS="$DUPL_PARAMS --full-if-older-than $MAX_FULLBKP_AGE "
+
+      VERBOSITY=warning
+      ARCH_DIR='/var/cache/duplicity/duply_main/'
+
+ * Create file ``/etc/duply/main/exclude`` with the following contents::
+
+    - /dev
+    - /proc
+    - /sys
+    - /run
+    - /var/lock
+    - /var/run
+    - /lost+found
+    - /boot
+    - /tmp
+    - /var/tmp
+    - /media
+    - /mnt
+    - /var/cache
+    - /var/crash
+    - /var/swap
+    - /var/swapfile
+    - /var/swap.img
+    - /var/lib/mysql
+    - /var/lib/postgres
+
+  If you feel like it, also exclude ``/bin``, ``/lib``, ``/sbin`` and
+  ``/usr``, maybe also ``/opt``.
+
+ * Create file ``/etc/duplicity/main/pre`` with contents similar to the
+   following (delete the PostgreSQL or SQLite part as needed, or add
+   more SQLite commands if you have many SQLite databases):
+
+   .. code-block:: bash
+
+      #!/bin/bash
+      su postgres -c 'pg_dumpall --file=/var/backups/postgresql.dump'
+      echo '.dump' | \
+         sqlite3 /var/opt/$DJANGO_PROJECT/$DJANGO_PROJECT.db \
+             >/var/backups/sqlite-$DJANGO_PROJECT.dump
+
+   Chmod the file to 755.
+
+* Create file ``/etc/cron.daily/duply`` with the following contents:
+
+  .. code-block:: bash
+
+     #!/bin/bash
+     duply main purge --force >/tmp/duply.out
+     duply main purgeIncr --force >>/tmp/duply.out
+     duply main backup >>/tmp/duply.out
+
+  Chmod the file to 755.

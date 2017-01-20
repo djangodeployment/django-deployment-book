@@ -8,5 +8,6 @@
    06-gunicorn
    07-settings
    08-postgresql
-   09-recovery
+   09-recovery1
+   10-recovery2
    meta_epub
