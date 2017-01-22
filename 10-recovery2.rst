@@ -396,41 +396,63 @@ Briefly, here is how to copy the server's data to your local machine:
   .. code-block:: bash
 
      awk '{ print $2 }' /etc/duply/main/exclude >/tmp/exclude
-     tar czf /tmp/`hostname`-`date --iso-8601`.tar.gz \
-         --exclude-from=/tmp/exclude /
+     tar czf - --exclude-from=/tmp/exclude / | \
+         split --bytes=200M - \
+             /tmp/`hostname`-`date --iso-8601`.tar.gz.
 
-This will need some explanation, of course, but it will create a file in
-``/tmp`` that ends in ``.tar.gz`` and contains the server name and the
-date. We will talk about downloading it later on. Now let's see why. We
-will check the last command first.
+This will need some explanation, of course, but it will create one or more
+files with filenames similar to the following:
+
+| ``/tmp/myserver-2017-01-22.tar.gz.aa``
+| ``/tmp/myserver-2017-01-22.tar.gz.ab``
+| ``/tmp/myserver-2017-01-22.tar.gz.ac``
+
+We will talk about downloading it later on. Now let's examine what we
+did. We will check the last command (i.e. the ``tar`` and ``split``)
+first.
 
 We've seen the ``tar`` command earlier. The "c" in "czf" means we will
-create an archive; the "z" means the archive will be compressed; and the
-"f" followed by a file name specifies the name of the archive. The
-backticks in the file name are a neat shell trick: it executes the
-command within the backticks, takes the command's standard output, and
-inserts it in the command line. So the shell will first execute
-``hostname``, and ``date --iso-8601``, it will then create the command
-line for ``tar`` that contains among other things the output of these
-commands, and then it will execute ``tar``. Compressed archive files end
-in ``.tar.gz``. The last argument to the ``tar`` command specifies which
-directory should be put in the archive; in our case it's a mere slash,
-which means the root directory. The ``--exclude-from=/tmp/exclude``
-option means that files and directories specified in the
-``/tmp/exclude`` file should not be included in the archive. This brings
-us to the first command, which creates ``/tmp/exclude``.
+create an archive; the "z" means the archive will be compressed; the "f"
+followed by a file name specifies the name of the archive; "f" followed
+by a hyphen means the archive will be created in the standard output.
+The last argument to the ``tar`` command specifies which directory
+should be put in the archive; in our case it's a mere slash, which means
+the root directory. The ``--exclude-from=/tmp/exclude`` option means
+that files and directories specified in the ``/tmp/exclude`` file should
+not be included in the archive.
 
-We want to exclude the same directories as those specified in
-``/etc/duply/main/exclude``. However, the syntax used by duplicity is
-different from the syntax used by ``tar``. Duplicity needs the
-pathnames to be preceded by a minus sign and a space, whereas ``tar``
-just wants them listed. So the first command merely strips the minus
-sign. ``awk`` is actually a whole programming language, but you don't
-need to learn it (I don't know it either). The ``{ print $2 }`` means
-"print the second item of each line"; by default, ``awk`` splits using
-spaces. While ``awk`` is the canonical way of doing this in Unix-like
-systems, you could do it with Python if you prefer, but it's much
-harder:
+This would create an archive with all the files we need, but it might be
+too large. If your external disk is formatted in FAT32, it might not be
+able to hold files larger than 2 GB. So we take the data thrown at the
+standard output and we split it in manageable chunks of 200 MB each.
+This is what the ``split`` command does. The hyphen in ``split`` means
+"split the standard input". The last argument to ``split`` is the file
+prefix; the files ``split`` creates are named ``PREFIXaa``,
+``PREFIXab``, and so on.
+
+The backticks in the specified prefix are a neat shell trick: the shell
+executes the command within the backticks, takes the command's standard
+output, and inserts it in the command line. So the shell will first
+execute ``hostname``, and ``date --iso-8601``, it will then create the
+command line for ``split`` that contains among other things the output
+of these commands, and then it will execute ``split``. We have chosen a
+prefix that ends in ``.tar.gz``, because that is what compressed tar
+files end in. If you concatenate these files into a single file ending
+in ``.tar.gz``, that will be the compressed tar file. We will see how to
+concatenate them two sections ahead.
+
+Finally, let's explain the first command, which creates
+``/tmp/exclude``.  We want to exclude the same directories as those
+specified in ``/etc/duply/main/exclude``. However, the syntax used by
+duplicity is different from the syntax used by ``tar``. Duplicity needs
+the pathnames to be preceded by a minus sign and a space, whereas
+``tar`` just wants them listed. So the first command merely strips the
+minus sign. ``awk`` is actually a whole programming language, but you
+don't need to learn it (I don't know it either). The ``{ print $2 }``
+means "print the second item of each line"; by default, ``awk`` splits
+lines to items using spaces. While ``awk`` is the canonical way of doing
+this in Unix-like systems, you could do it with Python if you prefer,
+but it's much harder:
 
   .. code-block:: bash
 
@@ -446,15 +468,110 @@ Windows), you can put it directly in there like this:
 
    .. code-block:: bash
 
-      scp root@$SERVER_IP_ADDRESS:/tmp/*.tar.gz $EXTERNAL_DISK
+      scp root@$SERVER_IP_ADDRESS:/tmp/*.tar.gz.* $EXTERNAL_DISK
 
 In Windows, use ``pscp`` instead of ``scp``. You can also use graphical
-tools, however command-line tools can be faster.
+tools, however command-line tools can often be more convenient.
 
-+++Disk rotation
+In Unix-like systems, a better command is ``rsync``:
+
+   .. code-block:: bash
+
+      rsync root@$SERVER_IP_ADDRESS:/tmp/*.tar.gz.* $EXTERNAL_DISK
+
+If for some reason the transfer is interrupted and you restart it,
+``rsync`` will only transfer the parts of the files that have not yet
+been transferred. ``rsync`` must be installed both on the server and
+locally for this to work. You may have success with Windows rsync
+programs such as DeltaCopy.
+
+One problem with the above scheme is that we temporarily store the split
+tar file on the server, and the server might not have enough disk space
+for that. In that case, if you run a Unix-like system locally, this
+might work:
+
+   .. code-block:: bash
+
+     ssh root@$SERVER_IP_ADDRESS \
+         "awk '{ print \$2 }' /etc/duply/main/exclude
+             >/tmp/exclude; \
+          tar czf - --exclude-from=/tmp/exclude  /" | \
+       split --bytes=200M - \
+          $EXTERNAL_DISK/$SERVER_NAME-`date --iso-8601`.tar.gz.
+
+The ``ssh`` command will login to the remote server and execute the
+commands ``awk`` and ``tar``, and it will capture their standard output
+(i.e. ``tar``'s standard output, because ``awk``'s is redirected) and it
+will throw it in its own standard output.
+
+The trickiest part of this ``ssh`` command is that, in the ``awk``, we
+have escaped the dollar sign with a backslash. ``awk`` is a programming
+language, and ``{ print $2 }`` is an ``awk`` program. ``awk`` must
+literally receive the string ``{ print $2 }`` as its program. When we
+give a local shell the command ``awk '{ print $2 }'``, the shell leaves
+the ``{ print $2 }`` as it is, because it is enclosed in single quotes.
+If, instead, we used double quotes, we would use ``awk "{ print \$2
+}"``, otherwise, if we simply used ``$2``, the shell would try to expand
+it to whatever ``$2`` means (see :ref:`syntax_is_bash <Bash syntax>`).
+Now the string given to ``ssh`` is a double-quoted string. The *local*
+shell gets that string and performs expansions and runs ``ssh`` after it
+has done these expansions; and ``ssh`` gets the resulting string,
+executes a shell remotely, and gives it that string. You can understand
+the rest of the story with a bit of thinking.
+
+If you aren't running a Unix-like system locally, something else you can
+do is use another Debian/Ubuntu server that you have on the network and
+does have the disk space. You can also temporarily create one at Digital
+Ocean just for the job. After running the above command to copy the
+backup to it, you can then copy it to your local machine and external
+disk.
+
+Storing and rotating external disks
+-----------------------------------
+
+In the previous chapter I told you you need two external disks. Store
+one of them at your office and the other elsewhere—at your home, at your
+boss's home, at a bank vault, at a backup storage company, or at your
+customer's office or home (however don't give your customer a disk that
+also contains data of other customers of yours). Whatever place you
+chose, I will be calling it "off site". So you will be keeping one disk
+off site and one on site. Whenever you want to perform an offline backup
+(say once per month), connect the disk you have on site, delete all the
+files it contains, and perform the procedure described in the previous
+section to backup your servers on it. After that, physically label it
+with the date (overwriting or removing the previous label), and move it
+off site. Bring the other disk on site and let it sit there until the
+next offline backup.
+
+Why do we use two disks instead of just one? Well, it's quite
+conceivable that your online data (and online backup) will be severely
+damaged, and you can perform an offline backup, wiping out the previous
+one, before realizing the server's severely damanged. In that case, your
+offline disk will contain damaged data. Or the attacker might wait for
+you to plug in the backup disk, and then wipe it out and proceed to wipe
+out the online backup and you servers.
+
+You might object that there is a weakness to this plan because the two
+disks are at the same location, off site, when you take there the
+recently used disk and exchange it with the older one. I wouldn't worry
+too much about this. Offline backups are extra backups anyway, and you
+hope to never need to use them. While it's possible that someone can get
+access to all your passwords and delete all your online servers and
+backups, the probability of this happening at the same time as the
+physical destruction of your two offline disks at the limited time they
+are both off site is so low that you should probably worry more about
+your plane crashing.
+
+With this scheme, you might lose up to one month of data. Normally this
+is too much, but maybe for the extreme case we are talking about it's
+OK. Only you can judge that. If you think it's unacceptable, you might
+perform offline backups more often. If you do them more often than once
+every two weeks, it would be better to use more external disks.
 
 Recovering from offline backups
 -------------------------------
+
+
 
 Chapter summary
 ---------------

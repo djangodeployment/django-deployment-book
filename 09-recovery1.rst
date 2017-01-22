@@ -120,14 +120,20 @@ backup costs can be higher than the costs for virtual machines.
 
 If you use external disks for offline backups, you need two disks, and
 each disk must have a capacity of all the data of all your installations
-combined. In this book we deal with deployments on a single server, so
-these are probably small and a 1 TB disk is likely enough for all your
-deployments. Two such external disks cost around $100. They might live
-for five years, but I prefer to be more conservative and assume they'll
-last for a maximum of two years; your backup schemes, your customers,
-and your business in general will have changed enough by then. So the
-total cost of backup (assuming it all fits in a 1 TB disk) is $50 per
-year plus $1.20 per GB per year.
+combined. They must be external USB rotating (i.e. not SSD) disks. You
+may also be able to use SATA disks with a SATA-to-USB adapter; however,
+one of the advantages of USB disks is that it's much easier to label
+them by attaching a sticker (SATA disks have very little space available
+for attaching a sticker, unless you cover their original label, which
+you don't want). You might want to use small (2.5-inch) disks, which are
+much easier to carry. In any case, in this book we deal with deployments
+on a single server, so these are probably small and a 1 TB disk is
+likely enough for all your deployments. Two such external disks cost
+around $100. They might live for five years, but I prefer to be more
+conservative and assume they'll last for a maximum of two years; your
+backup schemes, your customers, and your business in general will have
+changed enough by then. So the total cost of backup (assuming it all
+fits in a 1 TB disk) is $50 per year plus $1.20 per GB per year.
 
 Setting up backup storage
 -------------------------
@@ -279,6 +285,8 @@ called ``conf``, with the following contents:
 
     VERBOSITY=warning
     ARCH_DIR=/var/cache/duplicity/duply_main/
+
+.. _syntax_is_bash:
 
 .. warning:: Syntax is bash
 
