@@ -48,28 +48,29 @@ when that procedure is tested.** Anything less than that is dangerous.
 Where to backup
 ---------------
 
-The cloud is very attractive Amazon, Google, Backblaze, Microsoft, they
+The cloud is very attractive. Amazon, Google, Backblaze, Microsoft, they
 sell cheap storage. All your server has to do is save its stuff there.
 You don't need to change tapes every day and move them off site, as we
 used to do 10 years ago. And your backup is on another continent. No
-chance it will explode the same time as your server, right? **Wrong!** 
+chance it will explode the same time as your server, right? Wrong!
 
 The problem is that your system has a single point of failure: the
 security of your server. For your server to backup itself to the remote
 storage, it must have write access to the remote storage. So if the
 security of your server is compromised, the attacker can delete your
-server's data _and_ the backup.
+server's data *and* the backup.
 
 Do you think this is far-fetched? Code Spaces was a company that had its
 code and data on Amazon Web Services. One day in 2014 an attacker
 managed to get access to their account and demanded ransom. Negotiations
 didn't go well and the attacker deleted all data. All backups.
 Everything. The company was wiped out overnight. It ceased to exist.
+Undoubtedly its customers were also damaged.
 
 Forget about two-factor authentication or Amazon's undeletable S3 files.
 Your phone might be stolen. Or the employee who has access to the
-account _and_ has two factor-authentication on his phone might go crazy
-and want to harm you.  Or _you_ might go crazy and want to hurt your
+account *and* has two factor-authentication on his phone might go crazy
+and want to harm you.  Or *you* might go crazy and want to hurt your
 customers. Or you might be paying the server and the backup from the
 same credit card, with the same obsolete email in both, and the credit
 card might be cancelled, and you'd fail to receive the emails, and the
@@ -87,8 +88,7 @@ something.
 
 What I do is backup my systems online daily, but I also copy the backup
 to a disk once a month, and I take the disk offline. The next month I
-use another disk. I reuse older disks eventually, so I have a total of
-about ten backup disks. I will tell you more about it later on.
+use another disk. I will tell you more about it later on.
 
 .. _heartbleed: https://en.wikipedia.org/wiki/Heartbleed
 .. _shellshock: https://en.wikipedia.org/wiki/Shellshock_%28software_bug%29
@@ -106,34 +106,41 @@ every three months, and backups kept for two years. This means that each
 GB will be stored a total of eight times. So this means that each GB of
 data, or eight GB of backup storage, will cost $0.48 per year.
 
-There are also charges for downloading. If you download the backups once
-a month in order to save them to an offline disk, this will cost an
-additional $0.05 per month, which amounts to $0.60 per year. If you also
-consider two additional downloads per year for recovery testing, that's
-another $0.10. So the total so far is $1.18 per GB per year. For a
-Django installation with 10 GB of data, this will be $11.80 per year.
-For 30 GB of data, it will be $35.40 per year. While it is not much, if
-you maintain many Django installations it can add up, so you must make
-sure you take the cost into account when you offer a support contract to
-the customer, and you must also make sure the customer understands that
-backup costs can be higher than the costs for virtual machines.
+There are also charges for downloading. Backblaze charges $0.05 per GB
+for each download.  If you download the backups twice a year for
+recovery testing, that's $0.10. So the total so far is $0.58 per GB per
+year. For a Django installation with 10 GB of data, this will be $5.80
+per year.  For 30 GB of data, it will be $17.40 per year. While it is
+not much, if you maintain many Django installations it can add up, so
+you must make sure you take the cost into account when you offer a
+support contract to the customer.
+
+If you download the backups once a month in order to save them to an
+offline disk, this will cost an additional $0.05 per month, which
+amounts to $0.60 per year, so this doubles online storage costs. In the
+scheme I explain in the next chapter, we take offline backups directly
+from the server, not from the online backups, so you don't have this
+cost. However, it's perfectly valid to backup the backups instead, and
+sometimes it's preferable; if you do it this way, don't forget to take
+the download cost into account.
 
 If you use external disks for offline backups, you need two disks, and
 each disk must have a capacity of all the data of all your installations
-combined. They must be external USB rotating (i.e. not SSD) disks. You
-may also be able to use SATA disks with a SATA-to-USB adapter; however,
-one of the advantages of USB disks is that it's much easier to label
-them by attaching a sticker (SATA disks have very little space available
-for attaching a sticker, unless you cover their original label, which
-you don't want). You might want to use small (2.5-inch) disks, which are
-much easier to carry. In any case, in this book we deal with deployments
-on a single server, so these are probably small and a 1 TB disk is
-likely enough for all your deployments. Two such external disks cost
-around $100. They might live for five years, but I prefer to be more
-conservative and assume they'll last for a maximum of two years; your
-backup schemes, your customers, and your business in general will have
-changed enough by then. So the total cost of backup (assuming it all
-fits in a 1 TB disk) is $50 per year plus $1.20 per GB per year.
+combined. They must be rotating disks (i.e. not SSD), preferably
+portable USB ones.  You may also be able to use SATA disks with a
+SATA-to-USB adapter; however, one of the advantages of USB disks is that
+it's much easier to label them by attaching a sticker (SATA disks have
+very little space available for attaching a sticker, unless you cover
+their original label, which you don't want). You might want to use small
+(2.5-inch) disks, which are much easier to carry. In any case, in this
+book we deal with deployments on a single server, so these are probably
+small and a 1 TB disk is likely enough for all your deployments. Two
+such external disks cost around $100. They might live for five years,
+but I prefer to be more conservative and assume they'll last for a
+maximum of two years; your backup schemes, your customers, and your
+business in general will have changed enough by then. So the total cost
+of backup (assuming it all fits in a 1 TB disk) is $50 per year plus
+$0.58 per GB per year.
 
 Setting up backup storage
 -------------------------
@@ -150,13 +157,13 @@ To setup your backup storage on Backblaze, go to https://backblaze.com/,
 select "B2 Cloud Storage", and sign up or login. Then create a bucket.
 
 A bucket is a virtual hard disk, so to speak. It has no fixed size; it
-grows as you add files to it. You will probably wonder whether you
-should have different buckets for different customers. In this chapter,
-I assume you have only one bucket, which is simpler. Remember, always
-choose the simplest solution first, and don't make assumptions about how
-the future will be; very often you ain't gonna need it. If and when the
-future brings in needs that can't be covered by the solution I'm
-proposing here, you will need to revise your strategy.
+grows as you add files to it. Rather than having different buckets for
+different customers, in this chapter I assume you have only one bucket,
+which is simpler. Remember, always choose the simplest solution first,
+and don't make assumptions about how the future will be; very often you
+ain't gonna need it. If and when the future brings in needs that can't
+be covered by the solution I'm proposing here, you will need to revise
+your strategy.
 
 In order to create the bucket, you will be asked for a name, and about
 whether it's going to be private or public. It will be private of
@@ -186,30 +193,17 @@ Setting up duplicity and duply
 The recovery software we will use is duplicity. While it works quite
 well, it is hard to use on its own because its user interface is
 inconvenient. It does not have a configuration file, but you tell it
-everything it needs to know on the command line. For example, to backup
-your system you would tell it something like this:
-
-.. code-block:: bash
-
-   duplicity --no-encryption --verbosity 2 --full-if-older-than 2Y \
-       --exclude-globbing-filelist=/etc/duplicity/exclude \
-       / b2://$ACCOUNT_ID@$NICK-backup/$SERVER_NAME/
-
-To check the status of your backups you'd tell it something like this:
-
-.. code-block:: bash
-
-   duplicity collection-status --no-encryption --verbosity 2 \
-       b2://$ACCOUNT_ID@$NICK-backup/$SERVER_NAME/
-
-I believe that the authors of duplicity intended it to be run by
-scripts and not by humans. Here we are going to use duply, a
-front-end to duplicity that makes our job much easier. Let's start
-by installing it:
+everything it needs to know on the command line, and a very long command
+line indeed.  I believe that the authors of duplicity intended it to be
+run by scripts and not by humans.  Here we are going to use duply, a
+front-end to duplicity that makes our job much easier. Let's start by
+installing it:
 
 .. code-block:: bash
 
     apt install duply
+
+.. _installing_duplicity_in_debian:
 
 .. hint:: Installing duplicity in Debian
 
@@ -247,17 +241,16 @@ by installing it:
    desired operation is extraction of files from an archive (as opposed
    to ``c``, which is the creation of an archive, or ``t``, which is for
    listing the contents of an archive); the ``z`` means that the archive
-   is compressed (and should therefore be uncompressed); and ``f`` means
-   that "the next argument in the command line is the archive name". I
-   have long forgotten what it does if you don't specify the ``f``
-   option, but the default was something suitable for 1979, when the
-   first version of ``tar`` was created and had to do with tape drives
-   (in fact "tar" is short for "tape archiver"). If more argument
-   follow, they are names of files to extract from the archive. Since we
-   don't specify any, it will extract all files. In this particular
-   archive, all contained files are in directory
-   ``duplicity-$DUPLICITY_VERSION``, so ``tar`` creates the directory to
-   put the files in there.
+   is compressed; and ``f`` means that "the next argument in the command
+   line is the archive name". I have long forgotten what it does if you
+   don't specify the ``f`` option, but the default was something
+   suitable for 1979, when the first version of ``tar`` was created and
+   had to do with tape drives (in fact "tar" is short for "tape
+   archiver"). If more arguments follow, they are names of files to
+   extract from the archive. Since we don't specify any, it will extract
+   all files. In this particular archive, all contained files are in
+   directory ``duplicity-$DUPLICITY_VERSION``, so ``tar`` creates the
+   directory to put the files in there.
 
 Next, let's create a configuration directory:
 
@@ -312,10 +305,10 @@ called ``conf``, with the following contents:
       GREETING1="hello, $WHO"
       GREETING2='hello, $WHO'
    
-   After this is run, ``GREETING1`` will have the value ``hello,
-   world``, whereas ``GREETING2`` will be ``hello, $WHO``. You can
-   experiment by simply typing these commands in the shell prompt, and
-   examine the values of variables with ``echo $GREETING1`` and so on.
+   After this is run, ``GREETING1`` will have the value "hello, world",
+   whereas ``GREETING2`` will be "hello, $WHO". You can experiment by
+   simply typing these commands in the shell prompt, and examine the
+   values of variables with ``echo $GREETING1`` and so on.
 
 Also create a file ``/etc/duply/main/exclude``, with the following
 contents::
@@ -349,9 +342,10 @@ You can now backup your system by executing this command:
 If this is a small virtual server, it should finish in a few minutes.
 **This, however, is just a temporary test.** There are many things that
 won't work correctly, and one of the most important is that we haven't
-backed up PostgreSQL (and MySQL, if you happen to use it). We just made
-this test to get you up and running.  Let me now explain what these
-configuration files mean.
+backed up PostgreSQL (and MySQL, if you happen to use it), and any
+SQLite files we backed up may be corrupted. We just made this test to
+get you up and running.  Let me now explain what these configuration
+files mean.
 
 Duply configuration
 -------------------
@@ -361,10 +355,10 @@ Let's check again the duply configuration file,
 
 .. code-block:: bash
 
-    GPG_KEY='disabled'
+    GPG_KEY=disabled
 
-    SOURCE='/'
-    TARGET='b2://$ACCOUNT_ID:$APPLICATION_KEY@$NICK-backup/$SERVER_NAME/'
+    SOURCE=/
+    TARGET=b2://$ACCOUNT_ID:$APPLICATION_KEY@$NICK-backup/$SERVER_NAME/
 
     MAX_AGE=2Y
     MAX_FULLS_WITH_INCRS=2
@@ -372,9 +366,9 @@ Let's check again the duply configuration file,
     DUPL_PARAMS="$DUPL_PARAMS --full-if-older-than $MAX_FULLBKP_AGE "
 
     VERBOSITY=warning
-    ARCH_DIR='/var/cache/duplicity/duply_main/'
+    ARCH_DIR=/var/cache/duplicity/duply_main/
 
-**GPG_KEY='disabled'**
+**GPG_KEY=disabled**
     Duplicity, and therefore duply, can encrypt the backups. The
     rationale is that the backup storage provider shouldn't be able to
     read your files. So if you have a company, and you have a server at
@@ -388,13 +382,13 @@ Let's check again the duply configuration file,
     backups is often more trouble than what it's worth, so we just
     disable it.
 
-**SOURCE='/'**
-    The ``SOURCE`` setting specifies the directory to backup. We specify
-    the root directory in order to backup the entire file system. We
-    will actually exclude some files and directories as I explain in the
-    next section.
+**SOURCE=/**
+    This specifies the directory to backup. We specify the root
+    directory in order to backup the entire file system. We will
+    actually exclude some files and directories as I explain in the next
+    section.
 
-**TARGET='b2://...'**
+**TARGET=b2://...**
     This is the place to backup to. The first part, ``b2:``, specifies
     the "storage backend". Duplicity supports many storage backends;
     they are listed in ``man duplicity``, Section "URL Format". As you
@@ -405,15 +399,15 @@ Let's check again the duply configuration file,
 
 **MAX_AGE=2Y**
     This means that backups older than 2 years will be deleted. Note
-    that, if your databases contain customer data, it may be illegal to
-    keep the backups for more than a specified amount of time. If a user
-    decides to unsubscribe or otherwise remove their data from your
-    database, you are often required to delete every trace of your
-    customer's data from everywhere, including the backups, within a
-    specified amount of time, such as six months or two years. You need
-    to check your local privacy laws.
+    that, if your databases and files contain customer data, it may be
+    illegal to keep the backups for more than a specified amount of
+    time. If a user decides to unsubscribe or otherwise remove their
+    data from your database, you are often required to delete every
+    trace of your customer's data from everywhere, including the
+    backups, within a specified amount of time, such as six months or
+    two years. You need to check your local privacy laws.
 
-**MAX_FULLS_WITH_INCRS=2** **MAX_FULLBKP_AGE=3M**
+**MAX_FULLS_WITH_INCRS=2**, **MAX_FULLBKP_AGE=3M**
     A **full backup** backs up everything. In an **incremental backup**
     only the things that have changed since the previous backup are
     backed up. So if on 12 January you perform a full backup, an
@@ -428,11 +422,11 @@ Let's check again the duply configuration file,
     Collectively these parameters (together with ``MAX_AGE=2Y``) mean
     that a total of about eight full backups will be kept; for the most
     recent three to six months, the daily history of the files will be
-    kept, whereas for the time before the quarterly history will be
-    kept. You will thus be able to restore your system to the state it
-    was two days ago, or three days ago, or 58 days ago, but not
-    necessarily exactly 407 days ago—you will need to round this up to
-    about 45 days earlier or later.
+    kept, whereas for older backups the quarterly history will be kept.
+    You will thus be able to restore your system to the state it was two
+    days ago, or three days ago, or 58 days ago, but not necessarily
+    exactly 407 days ago—you will need to round this up to about 45 days
+    earlier or later.
 
     Keeping the history of your system is very important. It is common
     to lose some data and realize it some time later. If each backup
@@ -455,7 +449,7 @@ Let's check again the duply configuration file,
     show warnings and errors; "notice" will show notices and warnings
     and errors; and so on. "warning" is usually fine.
 
-**ARCH_DIR='/var/cache/duplicity/duply_main/'**
+**ARCH_DIR=/var/cache/duplicity/duply_main/**
     Duplicity keeps a cache on the local machine that helps it know what
     things it has backed up, without actually needing to fetch that
     information from the backup storage—this speeds things up and
@@ -528,8 +522,8 @@ specified two sections ago is this::
    ``/sys`` and ``/proc`` contain information about the system. For
    example, ``/proc/meminfo`` contains information about RAM, and
    ``/proc/cpuinfo`` about the CPU. You can examine the contents of
-   these "files" by typing, for example, ``cat /proc/meminfo`` (the
-   ``cat`` command prints the contents of files).
+   these "files" by typing, for example, ``cat /proc/meminfo`` (``cat``
+   prints the contents of files).
 
    The ``/dev``, ``/sys`` and ``/proc`` directories exist on your disk
    only as empty directories. The "files" inside them are created by the
@@ -550,14 +544,14 @@ specified two sections ago is this::
 
 **/lost+found**
    In certain types of filesystem corruption, fsck (the equivalent of
-   Windows checkdsk) puts in there orphan files that it existed on the
-   disk but did not have a directory entry. I've been using Unix systems
-   for 25 years now, and I've had plenty of power failures while the
-   system was on, and many of them were in the old times without
-   journaling, and yet I believe I've only once seen files in that
-   directory, and they were not useful to me. It's more a legacy
-   directory, and many modern filesystems, such as XFS, don't have it at
-   all. You will not use it, let alone back it up.
+   Windows checkdsk) puts in there orphan files that existed on the disk
+   but did not have a directory entry. I've been using Unix systems for
+   25 years now, and I've had plenty of power failures while the system
+   was on, and many of them were in the old times without journaling,
+   and yet I believe I've only once seen files in that directory, and
+   they were not useful to me. It's more a legacy directory, and many
+   modern filesystems, such as XFS, don't have it at all. You will not
+   use it, let alone back it up.
 
 **/boot**
    This directory contains the stuff essential to boot the system,
@@ -613,21 +607,21 @@ specified two sections ago is this::
    We won't directly backup your databases. Section "Backing up
    databases" explains why and how.
 
-One more directory that is giving me headaches is ``/var/lib/lxcfs``. It
-seems, among other things, to contain stuff similar to ``/proc``, which
-creates error messages when you try to walk through. It is related to
-LXC, a virtual machine technology, which seems to be installed on Ubuntu
-by default (at least in Digital Ocean). I think it could be a bad idea
-to exclude it, in case you start using LXC in the future and forget it's
-not being backed up. I just remove LXC with ``apt purge lxc-common`` and
-I'm done, as this also removes the directory.
+One more directory that is giving me headaches is ``/var/lib/lxcfs``.
+Like ``/proc``, it creates error messages when you try to walk through.
+It is related to LXC, a virtual machine technology, which seems to be
+installed on Ubuntu by default (at least in Digital Ocean). I think it
+could be a bad idea to exclude it, in case you start using LXC in the
+future and forget it's not being backed up. I just remove LXC with ``apt
+purge lxc-common lxcfs`` and I'm done, as this also removes the
+directory.
 
 Additional directories for excluding or including
 -------------------------------------------------
 
 Your backup system will work well if you exclude only the directories I
 already mentioned. In this section I explain what the other directories
-are and I discuss whether under what circumstances they should be
+are and I discuss whether and under what circumstances they should be
 excluded.
 
 **/bin, /lib, /sbin**
@@ -653,13 +647,13 @@ excluded.
    ``/lib64``. These also contain essential shared libraries. On my
    64-bit systems the libraries are actually in ``/lib``, but there also
    exists ``/lib64``, which only contains a symbolic link to a library
-   in ``/lib`` On other systems ``/lib`` may be a symbolic to either
+   in ``/lib``. On other systems ``/lib`` may be a symbolic to either
    ``/lib32`` or ``/lib64``. In any case, the system manages all these
    directories itself and we usually don't need to care.
 
 **/etc**
-   As we have already said in Chapter 3, ``/etc`` contains configuration
-   files.
+   As we have already said in :ref:`users_and_directories`, ``/etc``
+   contains configuration files.
 
 **/home, /root**
    ``/home`` is where user files are stored. It's the equivalent of
@@ -677,7 +671,7 @@ excluded.
    may create a django user with a ``/home/django`` directory and install
    their django project in there. In this book we have created a user,
    but we have been using different directories for the Django project,
-   as explained in Chapters 3 and 5.
+   as explained in previous chapters.
 
 **/usr, /opt, /srv**
    ``/usr`` has nothing to do with users, and its name is a historical
@@ -694,32 +688,24 @@ excluded.
    when the disks were small and the whole of ``/usr`` was on another
    disk that was being mounted later in the boot process.
 
-   ``/usr/share`` contains program information other than binaries and
-   libraries, but not data. ``/usr`` contains information that is part
-   of a program installation, and therefore does not change.  One
-   example of information that goes in ``/usr/share`` is documentation.
-   ``/usr/share`` also contains libraries, such as Python .py files,
-   that are architecture-independent (they are the same whether you are
-   on 32-bit or 64-bit systems or ARM systems).
-
    I'm not going to bother you with more details about the ``/usr``
    subdirectories, except ``/usr/local``. Everything installed in
    ``/usr``, except ``/usr/local``, is managed by the Debian/Ubuntu
    package manager.  For example, ``apt`` will install programs in
    ``/usr``, but will not touch ``/usr/local``. Likewise, while you can
-   touch ``/usr/local``, you should not touch any other place under
-   ``/usr``, because this is supposed to be touched only by the system's
-   package manager.  The tools you use respect that; for example, if you
-   install system-wide a Python module with ``pip``, it will install it
-   somewhere under ``/usr/local/lib`` and/or ``/usr/local/share``.
-   ``/usr/local`` has more or less the same subdirectories as ``/usr``,
-   and the difference is that only you (or your tools) write to
-   ``/usr/local``, and only the system package manager writes to the
-   rest of ``/usr``.
+   modify stuff inside ``/usr/local``, you should not touch any other
+   place under ``/usr``, because this is supposed to be managed only by
+   the system's package manager.  The tools you use respect that; for
+   example, if you install a Python module system-wide with ``pip``, it
+   will install it somewhere under ``/usr/local/lib`` and/or
+   ``/usr/local/share``.  ``/usr/local`` has more or less the same
+   subdirectories as ``/usr``, and the difference is that only you (or
+   your tools) write to ``/usr/local``, and only the system package
+   manager writes to the rest of ``/usr``.
 
    Programs not installed by the system package manager should go either
-   to ``/usr/local``, or to ``/opt``, or to ``/srv``. The best practice
-   would be like this:
+   to ``/usr/local``, or to ``/opt``, or to ``/srv``. Here is the
+   theory:
 
     - If the program replaces a system program, use ``/usr/local``. For
       example, a few pages ago I explained how we can install duplicity
@@ -729,7 +715,7 @@ excluded.
     - If the program, its configuration and its data are to be installed
       in a single directory, it should be a subdirectory of ``/srv``.
 
-    - If the program directories is going to be cleanly separated into
+    - If the program directories are going to be cleanly separated into
       executables, configuration, and data, the program should go to
       ``/opt`` (and the configuration to ``/etc/opt``, and the data to
       ``/var/opt``). This is what we have been doing with our Django
@@ -742,12 +728,13 @@ On carefully setup systems, you don't need to backup ``/bin``, ``/lib``,
 ``/sbin``, ``/usr`` and ``/opt``, because you can recreate them by
 re-installing the programs. This is true particularly if you are setting
 up your servers using some kind of automation system. I use Ansible. If
-a server explodes, I setup another one, I press a button, and Ansible
+a server explodes, I create another one, I press a button, and Ansible
 sets up the server in a few minutes, installing and configuring all
 necessary software. I only need to restore the data. In theory (and in
 practice) I don't need ``/etc`` either, but I never exclude it from
-backup, it's only about 10 M anyway. So, in theory, the only directories
-you need to backup are ``/var``, ``/srv``, ``/root`` and ``/home``.
+backup, it's only about 10 MB anyway. So, in theory, the only
+directories you need to backup are ``/var``, ``/srv``, ``/root`` and
+``/home``.
 
 .. warning:: Specify what you want to exclude, not what you want to backup
 
@@ -765,15 +752,15 @@ own), it would be better to not exclude ``/opt`` from backup, because it
 will make it harder to recover. It's very unlikely ``/bin``, ``/lib``
 and ``/sbin`` will be useful when restoring, but they're not much disk
 space anyway. The only real question is whether to backup ``/usr``,
-which can be perhaps 1 G. At $1.20 per year it's not much, but it might
+which can be perhaps 1 GB. At $0.58 per year it's not much, but it might
 also make backup and restore slower.
 
 Is your head spinning? Here's the bottom line: use the exclude list
 provided in the previous section, and if you feel confident also exclude
 ``/bin``, ``/lib``, ``/sbin`` and ``/usr``. If your Django project's
 files in ``/opt`` consume much space, and you believe you can re-clone
-them fast and setup the virtualenv fast (as described in Chapter 3), you
-can also exclude ``/opt``.
+them fast and setup the virtualenv fast (as described in
+:ref:`users_and_directories`), you can also exclude ``/opt``.
 
 **Whatever you decide, you might make an error. You might accidentally
 exclude something crucial. This is true even if you don't exclude
@@ -783,6 +770,8 @@ decryption password somewhere.**
 
 **The only way to be reasonably certain you are not screwing up is to
 test your recovery as I explain later.**
+
+.. _check_the_disk_space:
 
 .. tip:: Check the disk space
 
@@ -885,9 +874,10 @@ Better let's make ``/etc/duply/main/pre`` executable:
 The file is actually a **shell script**. In their simplest form, shell
 scripts are just commands one after the other (much like Windows
 ``.bat`` files). However, Unix shells like bash are complete programming
-languages (in fact duply itself is written in bash). So if, for some
-reason, you have both PostgreSQL and SQLite on a server, you can join
-the two above scripts like this:
+languages (in fact duply itself is written in bash). We won't do any
+complicated shell programming here, but if, for some reason, you have
+both PostgreSQL and SQLite on a server, you can join the two above
+scripts like this:
 
 .. code-block:: bash
 
@@ -903,9 +893,9 @@ as ``pg_dumpall`` will dump all databases of the cluster).
 
 Duply will execute ``/etc/duply/main/pre`` before proceeding to copy the
 files. (It will also execute ``/etc/duply/main/post``, if it exists,
-after copying, but we don't need to do anything like that in this
-scheme; but with different backup schemes ``pre`` could, for example,
-shutdown the database and ``post`` could start it again.)
+after copying, but we don't need to do anything like that; with
+different backup schemes ``pre`` could, for example, shutdown the
+database and ``post`` could start it again.)
 
 If you don't understand the ``pre`` file for SQLite, here is the
 explanation: to dump a SQLite database, you connect to it with ``sqlite3
@@ -916,9 +906,9 @@ telling it ``echo '.dump' | sqlite3 ...`` we give it the string ".dump",
 followed by newline, as standard input (the ``echo`` command just
 displays stuff and follows it with a newline; for example, try ``echo
 'hello, world'``). The vertical line, as I explained in the previous
-section (in the tip "Checking your disk space") sends the output of one
-command as input to another command. Finally, the ">" is the
-**redirection** symbol, it redirects the standard output of the
+section (see :ref:`Check the disk space <check_the_disk_space>`) sends
+the output of one command as input to another command. Finally, the ">"
+is the **redirection** symbol, it redirects the standard output of the
 ``sqlite3`` program, which would otherwise be displayed on the terminal,
 to a file.
 
@@ -963,23 +953,23 @@ Make the file executable:
 
    chmod 755 /etc/cron.daily/duply
 
-In Unixlike systems, cron is the standard scheduler; it executes tasks
+In Unix-like systems, cron is the standard scheduler; it executes tasks
 at specified times. Scripts in ``/etc/cron.daily`` are executed once
 daily, starting at 06:25 (am) local time. The time to which this
 actually refers depends on the system's time zone, which you can find by
 examining the contents of the file ``/etc/timezone``. In most of my
 servers, I use UTC. Backup time doesn't really matter much, but it's
-better to do it when the system is not very busy. For eastern time
-zones, 06:25 UTC could be a busy time, so you might want to change the
-system time zone with this command:
+better to do it when the system is not very busy. For time zones with a
+positive UTC offset, 06:25 UTC could be a busy time, so you might want
+to change the system time zone with this command:
 
 .. code-block:: bash
 
    dpkg-reconfigure tzdata
 
 There is a way to tell cron exactly at what time you want a task to run,
-but I won't go into that as throwing stuff in ``/etc/cron.daily`` should
-be sufficient for most use cases.
+but I won't go into that as throwing stuff into ``/etc/cron.daily``
+should be sufficient for most use cases.
 
 In the ``/etc/cron.daily/duply`` script, the first command, ``purge``,
 will delete full backups that are older than ``MAX_AGE``. The second
@@ -1011,13 +1001,19 @@ The redirection for the first command, ``>/tmp/duply.out``, overwrites
 ``/tmp/duply.out`` if it already exists. The redirection for the next
 two commands, ``>>/tmp/duply.out``, appends to the file.
 
+.. warning:: You must use a local mail server
+
+   The emails of cron cannot be sent unless a mail server is installed
+   locally on the server. See :ref:`using_a_local_mail_server` to setup
+   one. Don't omit it, otherwise you won't know when your system has a
+   problem and cannot backup itself.
+
 Chapter summary
 ---------------
 
  * Keep some offline backups and regularly test recovery (the next
    chapter deals with these).
- * Calculate storage costs. Backup storage can cost considerably more
-   than main storage.
+ * Calculate storage costs.
  * Create a bucket in your backup storage. A single bucket for all your
    deployments is probably enough. You can name it ``$NICK-backup``.
  * Install duply, create directory ``/etc/duply/main``, and chmod it to 700.
@@ -1026,10 +1022,10 @@ Chapter summary
 
    .. code-block:: bash
 
-      GPG_KEY='disabled'
+      GPG_KEY=disabled
 
-      SOURCE='/'
-      TARGET='b2://$ACCOUNT_ID:$APPLICATION_KEY@$NICK-backup/$SERVER_NAME/'
+      SOURCE=/
+      TARGET=b2://$ACCOUNT_ID:$APPLICATION_KEY@$NICK-backup/$SERVER_NAME/
 
       MAX_AGE=2Y
       MAX_FULLS_WITH_INCRS=2
@@ -1037,7 +1033,7 @@ Chapter summary
       DUPL_PARAMS="$DUPL_PARAMS --full-if-older-than $MAX_FULLBKP_AGE "
 
       VERBOSITY=warning
-      ARCH_DIR='/var/cache/duplicity/duply_main/'
+      ARCH_DIR=/var/cache/duplicity/duply_main/
 
  * Create file ``/etc/duply/main/exclude`` with the following contents::
 
@@ -1061,8 +1057,8 @@ Chapter summary
     - /var/lib/mysql
     - /var/lib/postgres
 
-  If you feel like it, also exclude ``/bin``, ``/lib``, ``/sbin`` and
-  ``/usr``, maybe also ``/opt``.
+   If you feel like it, also exclude ``/bin``, ``/lib``, ``/sbin`` and
+   ``/usr``, maybe also ``/opt``.
 
  * Create file ``/etc/duplicity/main/pre`` with contents similar to the
    following (delete the PostgreSQL or SQLite part as needed, or add
@@ -1078,13 +1074,15 @@ Chapter summary
 
    Chmod the file to 755.
 
-* Create file ``/etc/cron.daily/duply`` with the following contents:
+ * Create file ``/etc/cron.daily/duply`` with the following contents:
 
-  .. code-block:: bash
+   .. code-block:: bash
 
-     #!/bin/bash
-     duply main purge --force >/tmp/duply.out
-     duply main purgeIncr --force >>/tmp/duply.out
-     duply main backup >>/tmp/duply.out
+      #!/bin/bash
+      duply main purge --force >/tmp/duply.out
+      duply main purgeIncr --force >>/tmp/duply.out
+      duply main backup >>/tmp/duply.out
 
-  Chmod the file to 755.
+   Chmod the file to 755.
+
+ * Make sure you have a local mail server installed.

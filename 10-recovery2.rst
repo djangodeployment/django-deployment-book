@@ -4,8 +4,8 @@ Recovery part 2
 Restoring a file or directory
 -----------------------------
 
-You made some changes to ``/etc/opt/$DJANGO_PROJECT/settings.py`` and
-you want it back? No problem:
+You made some changes to ``/etc/opt/$DJANGO_PROJECT/settings.py``,
+changed your mind, and you want it back? No problem:
 
 .. code-block:: bash
 
@@ -75,21 +75,20 @@ let's assume this:
     databases ``postgres``, ``template0`` and ``template1``.
  2. You want to restore all your databases.
 
-Assuming the dump file is in
-``/tmp/restored_files/var/backups/postgresql.dump``, you can do it this
-way:
+Assuming ``/tmp/restored_files/var/backups/postgresql.dump`` is the dump
+file, you can do it this way:
 
 .. code-block:: bash
 
    cd /tmp/restored_files/var/backups
    su postgres -c 'psql -f postgresql.dump postgres' >/dev/null
 
-The problem is that ``psql`` shows a lot of output, which we don't need.
-We redirect the output to ``/dev/null``, which in Unixlike systems is a
-black hole; it is a device file that merely discards everything written
-to it. We discard only the standard output, not the standard error,
-because we want to see error messages. If everything goes well, it
-should show you only one error message:
+``psql`` shows a lot of output, which we don't need.  We redirect the
+output to ``/dev/null``, which in Unix-like systems is a black hole; it
+is a device file that merely discards everything written to it. We
+discard only the standard output, not the standard error, because we
+want to see error messages. If everything goes well, it should show only
+one error message:
 
     ERROR:  role "postgres" already exists
 
@@ -200,8 +199,8 @@ server that is among those that may need to be recovered.
     name points to the IP address of the new server (see
     :ref:`adding_dns_records`).
 
- 5. Create a user and group for your Django project (see :ref:`creating
-    user`).
+ 5. Create a user and group for your Django project (see
+    :ref:`creating_user`).
 
  6. Install packages:
 
@@ -222,7 +221,8 @@ server that is among those that may need to be recovered.
  7. Check duplicity version with ``duplicity --version``; if earlier
     than 0.7.6 and your backups are in Backblaze B2, install a more
     recent version of duplicity as explained in
-    :ref:`setting_up_duplicity_and_duply`.
+    :ref:`Installing duplicity in Debian
+    <installing_duplicity_in_debian>`.
 
  8. Create the duply configuration directory and file as explained in
     :ref:`setting_up_duplicity_and_duply` (you don't need to create any
@@ -306,9 +306,9 @@ server that is among those that may need to be recovered.
 
         cp /var/tmp/restored/etc/cron.daily/duply /etc/cron.daily/
 
-     (You may want to list ``/etc/cron.daily`` and
-     ``/var/tmp/restored/etc/cron.daily`` to see if there is any other
-     cronjob that needs restoring.)
+     (You may want to list ``/var/tmp/restored/etc/cron.daily`` and
+     ``/etc/cron.daily`` to see if there is any other cronjob that needs
+     restoring.)
 
  20. Start the Django project and verify it works:
 
@@ -323,7 +323,7 @@ server that is among those that may need to be recovered.
         shutdown -r now
 
 The system might work perfectly without restart; the reason we restart
-it is to verify that if the server restarts all services will startup
+it is to verify that if the server restarts, all services will startup
 properly.
 
 After you've finished, update your recovery plan with the notes you
@@ -357,8 +357,8 @@ with the following procedure:
 
  2. Follow the recovery plan of the previous section to bring up the
     system on a new server, **but omit the step about changing the
-    DNS**. (Hint: you can :ref:`editing_the_hosts_file <edit your own
-    hosts file>` while checking if the new system works.)
+    DNS**. (Hint: you can :ref:`edit your own hosts file
+    <editing_the_hosts_file>` while checking if the new system works.)
 
  3. After the system works and you've fixed all problems, change the DNS
     so that $DOMAIN, www.$DOMAIN, and any other needed name points to
@@ -366,12 +366,12 @@ with the following procedure:
 
  4. Wait for five minutes, then shut down the old server.
 
-You could have zero downtime by only follow the first two steps instead
-of all four, and after you are satisfied discard the *new* server
-instead of the old one. However, you can't really be certain you
+You could have zero downtime by only following the first two steps
+instead of all four, and after you are satisfied discard the *new*
+server instead of the old one. However, you can't really be certain you
 haven't left something out if you don't use the new server
 operationally. So while following half the testing plan can be a good
-idea as a pretest, in order to get an idea of how much time will
+idea as a preliminary test in order to get an idea of how much time will
 be needed by the actual test, staying there and not doing the actual
 test is a bad idea.
 
@@ -399,12 +399,12 @@ Copying offline
 
 Briefly, here is how to copy the server's data to your local machine:
 
-  .. code-block:: bash
+.. code-block:: bash
 
-     awk '{ print $2 }' /etc/duply/main/exclude >/tmp/exclude
-     tar czf - --exclude-from=/tmp/exclude / | \
-         split --bytes=200M - \
-             /tmp/`hostname`-`date --iso-8601`.tar.gz.
+   awk '{ print $2 }' /etc/duply/main/exclude >/tmp/exclude
+   tar czf - --exclude-from=/tmp/exclude / | \
+       split --bytes=200M - \
+           /tmp/`hostname`-`date --iso-8601`.tar.gz.
 
 This will need some explanation, of course, but it will create one or more
 files with filenames similar to the following:
@@ -413,11 +413,12 @@ files with filenames similar to the following:
 | ``/tmp/myserver-2017-01-22.tar.gz.ab``
 | ``/tmp/myserver-2017-01-22.tar.gz.ac``
 
-We will talk about downloading it later on. Now let's examine what we
+We will talk about downloading them later on. Now let's examine what we
 did. We will check the last command (i.e. the ``tar`` and ``split``)
 first.
 
-We've seen the ``tar`` command earlier. The "c" in "czf" means we will
+We've seen the ``tar`` command earlier, in :ref:`Installing duplicity in
+Debian <installing_duplicity_in_debian>`. The "c" in "czf" means we will
 create an archive; the "z" means the archive will be compressed; the "f"
 followed by a file name specifies the name of the archive; "f" followed
 by a hyphen means the archive will be created in the standard output.
@@ -439,13 +440,14 @@ prefix; the files ``split`` creates are named ``PREFIXaa``,
 The backticks in the specified prefix are a neat shell trick: the shell
 executes the command within the backticks, takes the command's standard
 output, and inserts it in the command line. So the shell will first
-execute ``hostname``, and ``date --iso-8601``, it will then create the
+execute ``hostname`` and ``date --iso-8601``, it will then create the
 command line for ``split`` that contains among other things the output
-of these commands, and then it will execute ``split``. We have chosen a
-prefix that ends in ``.tar.gz``, because that is what compressed tar
-files end in. If you concatenate these files into a single file ending
-in ``.tar.gz``, that will be the compressed tar file. We will see how to
-concatenate them two sections ahead.
+of these commands, and then it will execute ``split`` giving it the
+calculated command line. We have chosen a prefix that ends in
+``.tar.gz``, because that is what compressed tar files end in. If you
+concatenate these files into a single file ending in ``.tar.gz``, that
+will be the compressed tar file. We will see how to concatenate them two
+sections ahead.
 
 Finally, let's explain the first command, which creates
 ``/tmp/exclude``.  We want to exclude the same directories as those
@@ -455,35 +457,34 @@ the pathnames to be preceded by a minus sign and a space, whereas
 ``tar`` just wants them listed. So the first command merely strips the
 minus sign. ``awk`` is actually a whole programming language, but you
 don't need to learn it (I don't know it either). The ``{ print $2 }``
-means "print the second item of each line"; by default, ``awk`` splits
-lines to items using spaces. While ``awk`` is the canonical way of doing
-this in Unix-like systems, you could do it with Python if you prefer,
-but it's much harder:
+means "print the second item of each line".  While ``awk`` is the
+canonical way of doing this in Unix-like systems, you could do it with
+Python if you prefer, but it's much harder:
 
-  .. code-block:: bash
+.. code-block:: bash
 
-     python -c "import sys;\
-         print('\n'.join([x.split()[1] for x in sys.stdin]))" \
-         </etc/duply/main/exclude >/tmp/exclude
+   python -c "import sys;\
+       print('\n'.join([x.split()[1] for x in sys.stdin]))" \
+       </etc/duply/main/exclude >/tmp/exclude
 
 Now let's **download the archive**. That's easy using ``scp`` (on
 Unix-like systems) or ``pscp`` (on Windows). Assuming the external disk
 is plugged in and available as $EXTERNAL_DISK (i.e. something like
-``/media/user/DISK`` on GNU/Linux, and something like ``E:\\`` on
+``/media/user/DISK`` on GNU/Linux, and something like ``E:\`` on
 Windows), you can put it directly in there like this:
 
-   .. code-block:: bash
+.. code-block:: bash
 
-      scp root@$SERVER_IP_ADDRESS:/tmp/*.tar.gz.* $EXTERNAL_DISK
+   scp root@$SERVER_IP_ADDRESS:/tmp/*.tar.gz.* $EXTERNAL_DISK
 
 In Windows, use ``pscp`` instead of ``scp``. You can also use graphical
 tools, however command-line tools can often be more convenient.
 
 In Unix-like systems, a better command is ``rsync``:
 
-   .. code-block:: bash
+.. code-block:: bash
 
-      rsync root@$SERVER_IP_ADDRESS:/tmp/*.tar.gz.* $EXTERNAL_DISK
+   rsync root@$SERVER_IP_ADDRESS:/tmp/*.tar.gz.* $EXTERNAL_DISK
 
 If for some reason the transfer is interrupted and you restart it,
 ``rsync`` will only transfer the parts of the files that have not yet
@@ -496,14 +497,14 @@ tar file on the server, and the server might not have enough disk space
 for that. In that case, if you run a Unix-like system locally, this
 might work:
 
-   .. code-block:: bash
+.. code-block:: bash
 
-     ssh root@$SERVER_IP_ADDRESS \
-         "awk '{ print \$2 }' /etc/duply/main/exclude
-             >/tmp/exclude; \
-          tar czf - --exclude-from=/tmp/exclude  /" | \
-       split --bytes=200M - \
-          $EXTERNAL_DISK/$SERVER_NAME-`date --iso-8601`.tar.gz.
+   ssh root@$SERVER_IP_ADDRESS \
+       "awk '{ print \$2 }' /etc/duply/main/exclude
+           >/tmp/exclude; \
+        tar czf - --exclude-from=/tmp/exclude  /" | \
+     split --bytes=200M - \
+        $EXTERNAL_DISK/$SERVER_NAME-`date --iso-8601`.tar.gz.
 
 The ``ssh`` command will login to the remote server and execute the
 commands ``awk`` and ``tar``, and it will capture their standard output
@@ -518,7 +519,7 @@ give a local shell the command ``awk '{ print $2 }'``, the shell leaves
 the ``{ print $2 }`` as it is, because it is enclosed in single quotes.
 If, instead, we used double quotes, we would use ``awk "{ print \$2
 }"``, otherwise, if we simply used ``$2``, the shell would try to expand
-it to whatever ``$2`` means (see :ref:`syntax_is_bash <Bash syntax>`).
+it to whatever ``$2`` means (see :ref:`Bash syntax <syntax_is_bash>`).
 Now the string given to ``ssh`` is a double-quoted string. The *local*
 shell gets that string and performs expansions and runs ``ssh`` after it
 has done these expansions; and ``ssh`` gets the resulting string,
@@ -528,9 +529,9 @@ the rest of the story with a bit of thinking.
 If you aren't running a Unix-like system locally, something else you can
 do is use another Debian/Ubuntu server that you have on the network and
 does have the disk space. You can also temporarily create one at Digital
-Ocean just for the job. After running the above command to copy the
-backup to it, you can then copy it to your local machine and external
-disk.
+Ocean just for the job. After running the above command to create the
+backup and store it in the temporary server, you can then copy it to
+your local machine and external disk.
 
 You may have noticed we did not backup the databases. I assume that your
 normal backup script does this every day, and it stores the saved
@@ -562,7 +563,7 @@ damaged, and you can perform an offline backup, wiping out the previous
 one, before realizing the server's severely damanged. In that case, your
 offline disk will contain damaged data. Or the attacker might wait for
 you to plug in the backup disk, and then wipe it out and proceed to wipe
-out the online backup and you servers.
+out the online backup and your servers.
 
 You might object that there is a weakness to this plan because the two
 disks are at the same location, off site, when you take there the
@@ -585,13 +586,13 @@ Recovering from offline backups
 -------------------------------
 
 You will probably never need to recover from offline backups, so we
-won't go into much detail. The most important thing you need to care
-about is the safety of your external disk. Make **absolutely certain**
-that you will only plug it on a safe computer, one that is certainly not
-compromised by any attacker. Do this very slowly and think about every
-step. After plugging the external disk in, copy its files to the
-computer's disk, then unplug the external disk immediately and keep
-it safe.
+won't go into much detail. If a disaster happens and you need to restore
+from offline, the most important thing you need to care about is the
+safety of your external disk. Make **absolutely certain** you will only
+plug it on a safe computer, one that is certainly not compromised by any
+attacker. Do this very slowly and think about every step. After plugging
+the external disk in, copy its files to the computer's disk, then unplug
+the external disk immediately and keep it safe.
 
 Recovery is the same as what's described in
 :ref:`restoring_an_entire_system`, except for the steps that use duply
@@ -599,7 +600,7 @@ and duplicity to restore the backup in ``/var/tmp/restored_files``.
 Instead, copy the ``.tar.gz.XX`` files to the server's ``/var/tmp``
 directory; use ``scp`` or ``pscp`` or ``rsync`` for that (``rsync`` is
 the best if you have it).  When you have them all, join them in one
-piece with the concatenation command, ``cat``, than untar them:
+piece with the concatenation command, ``cat``, then untar them:
 
 .. code-block:: bash
 
@@ -619,15 +620,14 @@ with the tar command, like this:
    cd restored_files
    cat ../*.tar.gz.* | tar xf -
 
-Schedule manual operations
---------------------------
+Scheduling manual operations
+----------------------------
 
 In the previous chapter, I described stuff that you will eventually
-setup in such away that it runs alone. Your servers will be backing up
-themselves without you knowing anything about it.
-
-In contrast, all the procedures I described in this event are to be
-manually executed by a human:
+setup in such a way that it runs alone. Your servers will be backing up
+themselves without your knowing anything about it.  In contrast, all the
+procedures I described in this chapter are to be manually executed by a
+human:
 
  * Restoring part of a system or the whole system
  * Recovery testing
@@ -637,12 +637,11 @@ manually executed by a human:
 Some of these procedures will be triggered by an event, such as losing
 data. Recovery testing, however, and copying offline, will not be
 triggered; *you* must take care that they occur. This can be as simple
-as adding a few recurring entries in your calendar, or as hard as
+as adding a few recurring entries to your calendar, or as hard as
 inventing foolproof procedures to be added to the company's operations
 manual. Whatever you do, you must make sure it works. **If you don't
 test recovery, it is almost certain it will take too long when you need
-it, and it is quite likely that you will not be unable to recover at
-all.**
+it, and it is quite likely you will be unable to recover at all.**
 
 Chapter summary
 ---------------
@@ -651,9 +650,9 @@ Chapter summary
  * Make sure you will have access to the recovery plan (and all required
    information such as logins and passwords) even if your server stops
    existing.
- * Test your recovery plan at least once a year.
+ * Test your recovery plan once a year or so.
  * Backup online as well as to offline disks and store them safely.
  * Don't backup to offline disks at the same time as the system is
-   performing is online backup.
+   performing its online backup.
  * Create an offline backup schedule and a recovery testing schedule and
    make sure they are being followed.

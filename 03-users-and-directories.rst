@@ -1,3 +1,5 @@
+.. _users_and_directories:
+
 Users and directories
 =====================
 

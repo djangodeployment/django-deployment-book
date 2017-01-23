@@ -215,6 +215,8 @@ forget to rename the template file back to what it was. By the time you
 finish doing that, you should have received the email with the full
 trace.
 
+.. _using_a_local_mail_server:
+
 Using a local mail server
 -------------------------
 
