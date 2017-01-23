@@ -154,6 +154,8 @@ The second command will remove the "main" cluster of PostgreSQL version
 9.5 (replace that with your actual PostgreSQL version). The third
 command will initialize a brand new cluster.
 
+.. _restoring_an_entire_system:
+
 Restoring an entire system
 --------------------------
 
@@ -180,7 +182,11 @@ you can still follow it and omit some parts as you go. **I assume the
 backed up system only had Django apps deployed in the way I have
 described in the rest of this book.** If you have something else
 installed, or if you have deployed in a different way (e.g. in different
-directories), you must modify the plan with one of your own.
+directories), you **must** modify the plan with one of your own.
+
+You must also make sure that you have access to the recovery plan even
+if the server goes down; that is, don't store the recovery plan on a
+server that is among those that may need to be recovered.
 
  1. Notify management, or the customer, or whoever is affected and needs
     to be informed.
@@ -330,20 +336,20 @@ In the previous chapter I said several times that you must test your
 recovery. Your recovery testing plan depends on the extent to which
 downtime is an issue.
 
-**If downtime is not an issue**, that is, you can find a date and time
-in which the system is not being used, the simplest way to test the
+If downtime is not an issue, that is, you can find a date and time in
+which the system is not being used, the simplest way to test the
 recovery is to shutdown the server, pretend it has been entirely
 deleted, and follow the recovery plan in the previous section to bring
-up the system on a new server. Keep the old server off for a week or a
+the system up on a new server. Keep the old server off for a week or a
 month or until you feel confident it really has no useful information,
 then delete it.
 
-Another case is **if you can't have much downtime**, but there are times
-when the system is not being written to. Many web apps are like this;
-you want them to always be readable by the visitors, but maybe they are
-not being updated off hours. In that case, notify management or the
-customer about what you are going to do, pick up an appropriate time,
-and test the recovery with the following procedure:
+If you can't have much downtime, maybe there are times when the system
+is not being written to. Many web apps are like this; you want them to
+always be readable by the visitors, but maybe they are not being updated
+off hours. In that case, notify management or the customer about what
+you are going to do, pick up an appropriate time, and test the recovery
+with the following procedure:
 
  1. In the DNS, verify that the TTL of $DOMAIN, www.$DOMAIN, and any
     other necessary record is no more than 300 seconds or 5 minutes (see
@@ -526,6 +532,13 @@ Ocean just for the job. After running the above command to copy the
 backup to it, you can then copy it to your local machine and external
 disk.
 
+You may have noticed we did not backup the databases. I assume that your
+normal backup script does this every day, and it stores the saved
+databases in ``/var/backups``. You need to be careful, however, to not
+run the ``tar`` command at the same time cron and duply run
+``/etc/duply/main/pre``, otherwise you might be copying them at exactly
+the time they are being overwritten.
+
 Storing and rotating external disks
 -----------------------------------
 
@@ -571,7 +584,76 @@ every two weeks, it would be better to use more external disks.
 Recovering from offline backups
 -------------------------------
 
+You will probably never need to recover from offline backups, so we
+won't go into much detail. The most important thing you need to care
+about is the safety of your external disk. Make **absolutely certain**
+that you will only plug it on a safe computer, one that is certainly not
+compromised by any attacker. Do this very slowly and think about every
+step. After plugging the external disk in, copy its files to the
+computer's disk, then unplug the external disk immediately and keep
+it safe.
 
+Recovery is the same as what's described in
+:ref:`restoring_an_entire_system`, except for the steps that use duply
+and duplicity to restore the backup in ``/var/tmp/restored_files``.
+Instead, copy the ``.tar.gz.XX`` files to the server's ``/var/tmp``
+directory; use ``scp`` or ``pscp`` or ``rsync`` for that (``rsync`` is
+the best if you have it).  When you have them all, join them in one
+piece with the concatenation command, ``cat``, than untar them:
+
+.. code-block:: bash
+
+   cd /tmp
+   cat *.tar.gz.* >backup.tar.gz
+   mkdir restored_files
+   cd restored_files
+   tar xf ../backup.tar.gz
+
+If you are low on disk space, you might join the concatenation command
+with the tar command, like this:
+
+.. code-block:: bash
+
+   cd /tmp
+   mkdir restored_files
+   cd restored_files
+   cat ../*.tar.gz.* | tar xf -
+
+Schedule manual operations
+--------------------------
+
+In the previous chapter, I described stuff that you will eventually
+setup in such away that it runs alone. Your servers will be backing up
+themselves without you knowing anything about it.
+
+In contrast, all the procedures I described in this event are to be
+manually executed by a human:
+
+ * Restoring part of a system or the whole system
+ * Recovery testing
+ * Copying offline
+ * Recovering from offline backups
+
+Some of these procedures will be triggered by an event, such as losing
+data. Recovery testing, however, and copying offline, will not be
+triggered; *you* must take care that they occur. This can be as simple
+as adding a few recurring entries in your calendar, or as hard as
+inventing foolproof procedures to be added to the company's operations
+manual. Whatever you do, you must make sure it works. **If you don't
+test recovery, it is almost certain it will take too long when you need
+it, and it is quite likely that you will not be unable to recover at
+all.**
 
 Chapter summary
 ---------------
+
+ * Use the provided recovery plan or devise your own.
+ * Make sure you will have access to the recovery plan (and all required
+   information such as logins and passwords) even if your server stops
+   existing.
+ * Test your recovery plan at least once a year.
+ * Backup online as well as to offline disks and store them safely.
+ * Don't backup to offline disks at the same time as the system is
+   performing is online backup.
+ * Create an offline backup schedule and a recovery testing schedule and
+   make sure they are being followed.
