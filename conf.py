@@ -214,7 +214,8 @@ latex_elements = {
 
         % See http://stackoverflow.com/questions/3882770/. We've copied the following
         % from sphinx.sty, and changed it so that it does not show the release name in
-        % the page header.
+        % the page header. (Not sure it's needed though, maybe just keeping the
+        % release name empty can work, and maybe it depends on Sphinx version.)
 
         \makeatletter
 

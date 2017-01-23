@@ -6,7 +6,7 @@ BASEFILENAME = DeployingDjangoonasingleDebianorUbuntuserver
 
 # You can set these variables from the command line.
 SPHINXOPTS    =
-SPHINXBUILD   = sphinx-build
+SPHINXBUILD   = if ! [ `pip freeze | grep --color=none Sphinx` = `cat requirements.txt` ]; then echo 'Wrong sphinx version'; exit 1; fi; sphinx-build
 PAPER         =
 BUILDDIR      = _build
 
