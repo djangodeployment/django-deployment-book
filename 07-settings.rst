@@ -226,42 +226,43 @@ server, and configure the local mail server to send the emails to the
 smarthost.  There are several reasons why installing a local mail server
 is better:
 
- 1. Your server, like all Unix systems, has a scheduler, ``cron``, which
-    is configured to run certain programs at certain times. For example,
-    directory ``/etc/cron.daily`` contains scripts that are executed
-    once per day. Whenever a program run by ``cron`` throws an error
-    message, ``cron`` emails that error message to the administrator.
-    ``cron`` always works with a local mail server. If you don't install
-    a local mail server, you will miss these error messages. In Chapter 9
-    we will setup the backup for your server to run with ``cron``, and
-    you don't want to miss any error messages by your backup system!
+1. Your server, like all Unix systems, has a scheduler, ``cron``, which
+   is configured to run certain programs at certain times. For example,
+   directory ``/etc/cron.daily`` contains scripts that are executed
+   once per day. Whenever a program run by ``cron`` throws an error
+   message, ``cron`` emails that error message to the administrator.
+   ``cron`` always works with a local mail server. If you don't install
+   a local mail server, you will miss these error messages. In the chapters
+   about recovery we will setup the backup for your server to run with
+   ``cron``, and you don't want to miss any error messages from your
+   backup system!
 
- 2. While Django attempts to send an error email, if something goes
-    wrong, it fails silently. This behaviour is appropriate (the system
-    is in error, it attempts to email its administrator with the
-    exception, but sending the email also results in an error; can't do
-    much more).  Suppose, however, that when you try to verify, as we
-    did in the previous section, that error emails work, you find out
-    they don't work. What has gone wrong? Nothing is written in any log.
-    `Intercepting the communication`_ with ``ngrep`` won't work either,
-    because it's usually encrypted. If you use a locally installed mail
-    server, you will at least be able to look at the local mail server's
-    logs.
+2. While Django attempts to send an error email, if something goes
+   wrong, it fails silently. This behaviour is appropriate (the system
+   is in error, it attempts to email its administrator with the
+   exception, but sending the email also results in an error; can't do
+   much more).  Suppose, however, that when you try to verify, as we
+   did in the previous section, that error emails work, you find out
+   they don't work. What has gone wrong? Nothing is written in any log.
+   `Intercepting the communication`_ with ``ngrep`` won't work either,
+   because it's usually encrypted. If you use a locally installed mail
+   server, you will at least be able to look at the local mail server's
+   logs.
 
-    .. _intercepting the communication: http://djangodeployment.com/2016/10/24/how-to-use-ngrep-to-debug-http-headers/
+   .. _intercepting the communication: http://djangodeployment.com/2016/10/24/how-to-use-ngrep-to-debug-http-headers/
 
- 3. Sending an error email might take long. The communication line might
-    be slow, or a firewall or the DNS could be misbehaving, and it might
-    take several seconds, or even a minute, before Django manages to
-    establish a connection to the remote mail server. During this time,
-    the browser will be in a waiting state, and a Gunicorn process will
-    be occupied. Some people will recommend to send emails from celery
-    workers, but this is not possible for error emails. In addition,
-    there is no reason to install and program celery just for this
-    reason. If we use a local mail server, Django will deliver the email
-    to it very fast and finish its job, and the local mail server will
-    queue it and send it when possible.
- 
+3. Sending an error email might take long. The communication line might
+   be slow, or a firewall or the DNS could be misbehaving, and it might
+   take several seconds, or even a minute, before Django manages to
+   establish a connection to the remote mail server. During this time,
+   the browser will be in a waiting state, and a Gunicorn process will
+   be occupied. Some people will recommend to send emails from celery
+   workers, but this is not possible for error emails. In addition,
+   there is no reason to install and program celery just for this
+   reason. If we use a local mail server, Django will deliver the email
+   to it very fast and finish its job, and the local mail server will
+   queue it and send it when possible.
+
 While the most popular mail servers for Debian and Ubuntu are exim and
 postfix, I don't recommend them. Mail servers are strange beasts. They
 have large and tricky configuration files, because they can do a hell of
@@ -558,83 +559,83 @@ to ``compileall`` tells to not print the list of files compiled.
 Chapter summary
 ---------------
 
- * Install ``dma`` and (in the virtualenv) ``django-sendmail-backend``
+* Install ``dma`` and (in the virtualenv) ``django-sendmail-backend``
 
- * Make sure ``/etc/dma/dma.conf`` has these contents::
+* Make sure ``/etc/dma/dma.conf`` has these contents::
 
-      SMARTHOST $EMAIL_HOST
-      PORT 587
-      AUTHPATH /etc/dma/auth.conf
-      SECURETRANSFER
-      STARTTLS
-      MAILNAME /etc/mailname
+     SMARTHOST $EMAIL_HOST
+     PORT 587
+     AUTHPATH /etc/dma/auth.conf
+     SECURETRANSFER
+     STARTTLS
+     MAILNAME /etc/mailname
 
-   Also make sure ``/etc/dma/auth.conf`` has these contents::
+  Also make sure ``/etc/dma/auth.conf`` has these contents::
 
-      $EMAIL_HOST_USER|$EMAIL_HOST:$EMAIL_HOST_PASSWORD
+     $EMAIL_HOST_USER|$EMAIL_HOST:$EMAIL_HOST_PASSWORD
 
-   Make sure ``/etc/mailname`` contains $DOMAIN.
+  Make sure ``/etc/mailname`` contains $DOMAIN.
 
- * Create the cache directory:
+* Create the cache directory:
 
-   .. code-block:: bash
+  .. code-block:: bash
 
-      mkdir /var/cache/$DJANGO_PROJECT/cache
-      chown $DJANGO_USER /var/cache/$DJANGO_PROJECT/cache
+     mkdir /var/cache/$DJANGO_PROJECT/cache
+     chown $DJANGO_USER /var/cache/$DJANGO_PROJECT/cache
 
- * Finally, this is the whole ``settings.py`` file:
+* Finally, this is the whole ``settings.py`` file:
 
-   .. code-block:: python
+  .. code-block:: python
 
-       from django_project.settings.base import *
+      from django_project.settings.base import *
 
-       debug = false
-       allowed_hosts = ['$domain', 'www.$domain']
-       databases = {
-           'default': {
-               'engine': 'django.db.backends.sqlite3',
-               'name': '/var/opt/$django_project/$django_project.db',
-           }
-       }
-
-       server_email = 'noreply@$domain'
-       default_from_email = 'noreply@$domain'
-       admins = [
-           ('$admin_name', '$admin_email_address'),
-       ]
-       managers = admins
-       email_backend = 'django_sendmail_backend.backends.' \
-                       'emailbackend'
-
-       logging = {
-           'version': 1,
-           'disable_existing_loggers': false,
-           'formatters': {
-               'default': {
-                   'format': '[%(asctime)s] %(levelname)s: '
-                             '%(message)s',
-               }
-           },
-           'handlers': {
-               'file': {
-                   'class': 'logging.timedrotatingfilehandler',
-                   'filename': '/var/log/$django_project/'
-                               '$django_project.log',
-                   'when': 'midnight',
-                   'backupcount': 60,
-                   'formatter': 'default',
-               },
-           },
-           'root': {
-               'handlers': ['file'],
-               'level': 'info',
-           },
-       }
-
-      caches = {
+      debug = false
+      allowed_hosts = ['$domain', 'www.$domain']
+      databases = {
           'default': {
-              'backend': 'django.core.cache.backends.filebased.'
-                         'filebasedcache',
-              'location': '/var/cache/$django_project/cache',
+              'engine': 'django.db.backends.sqlite3',
+              'name': '/var/opt/$django_project/$django_project.db',
           }
       }
+
+      server_email = 'noreply@$domain'
+      default_from_email = 'noreply@$domain'
+      admins = [
+          ('$admin_name', '$admin_email_address'),
+      ]
+      managers = admins
+      email_backend = 'django_sendmail_backend.backends.' \
+                      'emailbackend'
+
+      logging = {
+          'version': 1,
+          'disable_existing_loggers': false,
+          'formatters': {
+              'default': {
+                  'format': '[%(asctime)s] %(levelname)s: '
+                            '%(message)s',
+              }
+          },
+          'handlers': {
+              'file': {
+                  'class': 'logging.timedrotatingfilehandler',
+                  'filename': '/var/log/$django_project/'
+                              '$django_project.log',
+                  'when': 'midnight',
+                  'backupcount': 60,
+                  'formatter': 'default',
+              },
+          },
+          'root': {
+              'handlers': ['file'],
+              'level': 'info',
+          },
+      }
+
+     caches = {
+         'default': {
+             'backend': 'django.core.cache.backends.filebased.'
+                        'filebasedcache',
+             'location': '/var/cache/$django_project/cache',
+         }
+     }

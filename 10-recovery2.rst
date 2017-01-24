@@ -70,10 +70,10 @@ How you will restore PostgreSQL depends on what exactly you want to
 restore and what the current state of your cluster is. For a moment,
 let's assume this:
 
- 1. You have just installed PostgreSQL with ``apt install postgresql``
-    and it has created a brand new cluster that only contains the
-    databases ``postgres``, ``template0`` and ``template1``.
- 2. You want to restore all your databases.
+1. You have just installed PostgreSQL with ``apt install postgresql``
+   and it has created a brand new cluster that only contains the
+   databases ``postgres``, ``template0`` and ``template1``.
+2. You want to restore all your databases.
 
 Assuming ``/tmp/restored_files/var/backups/postgresql.dump`` is the dump
 file, you can do it this way:
@@ -187,52 +187,70 @@ You must also make sure that you have access to the recovery plan even
 if the server goes down; that is, don't store the recovery plan on a
 server that is among those that may need to be recovered.
 
- 1. Notify management, or the customer, or whoever is affected and needs
-    to be informed.
+.. hint:: The rm command
 
- 2. Take notes. In particular, mark on this recovery plan anything that
-    needs improvement.
+   In various places in the following recovery plan, I tell you to use
+   the ``rm`` command, which is the Unix command that removes files.
+   With the ``-r`` option it recursively removes directories, and ``-f``
+   means "ask no questions". The following will delete the nginx
+   configuration, asking no questions:
 
- 3. Create a new server and add your ssh key.
+   .. code-block:: bash
 
- 4. Change the DNS so that $DOMAIN, www.$DOMAIN, and any other needed
-    name points to the IP address of the new server (see
-    :ref:`adding_dns_records`).
+      rm -rf /etc/nginx
 
- 5. Create a user and group for your Django project (see
-    :ref:`creating_user`).
+   ``rm`` accepts many arguments, so ``rm -rf /etc/nginx /etc/apache2``
+   will delete both directories. Accidentally inserting a space, as in
+   ``rm -rf / etc/nginx``, will delete mostly all your system.
 
- 6. Install packages:
+AAA.
 
-    .. code-block:: bash
-    
-       apt install python python3 \
-          python-virtualenv python3-virtualenv \
-          postgresql python-psycopg2 python3-psycopg2 \
-          sqlite3 dma nginx-light duply
+1. Notify management, or the customer, or whoever is affected and needs
+   to be informed.
 
-    (Ignore questions on how to setup dma, we will restore its
-    configuration from the backup later.)
+2. Take notes. In particular, mark on this recovery plan anything that
+   needs improvement.
 
-    If you use Apache, install ``apache2`` instead of ``nginx-light``.
-    The actual list of packages you need might be different (but you
-    can also find this out while restoring).
+3. Create a new server and add your ssh key.
 
- 7. Check duplicity version with ``duplicity --version``; if earlier
-    than 0.7.6 and your backups are in Backblaze B2, install a more
-    recent version of duplicity as explained in
-    :ref:`Installing duplicity in Debian
-    <installing_duplicity_in_debian>`.
+4. Change the DNS so that $DOMAIN, www.$DOMAIN, and any other needed
+   name points to the IP address of the new server (see
+   :ref:`adding_dns_records`).
 
- 8. Create the duply configuration directory and file as explained in
-    :ref:`setting_up_duplicity_and_duply` (you don't need to create any
-    files beside ``conf``, you don't need ``exclude`` or ``pre``).
+5. Create a user and group for your Django project (see
+   :ref:`creating_user`).
 
- 9. Restore the backup in ``/var/tmp/restored_files``:
-    
-    .. code-block:: bash
+6. Install packages:
 
-       duply main restore /var/tmp/restored_files
+   .. code-block:: bash
+   
+      apt install python python3 \
+         python-virtualenv python3-virtualenv \
+         postgresql python-psycopg2 python3-psycopg2 \
+         sqlite3 dma nginx-light duply
+
+   (Ignore questions on how to setup dma, we will restore its
+   configuration from the backup later.)
+
+   If you use Apache, install ``apache2`` instead of ``nginx-light``.
+   The actual list of packages you need might be different (but you
+   can also find this out while restoring).
+
+7. Check duplicity version with ``duplicity --version``; if earlier
+   than 0.7.6 and your backups are in Backblaze B2, install a more
+   recent version of duplicity as explained in
+   :ref:`Installing duplicity in Debian
+   <installing_duplicity_in_debian>`.
+
+8. Create the duply configuration directory and file as explained in
+   :ref:`setting_up_duplicity_and_duply` (you don't need to create any
+   files beside ``conf``, you don't need ``exclude`` or ``pre``).
+
+9. Restore the backup in ``/var/tmp/restored_files``:
+   
+   .. code-block:: bash
+
+      duply main restore /var/tmp/restored_files
 
 10. Restore the ``/opt``, ``/var/opt`` and ``/etc/opt`` directories:
 
@@ -246,81 +264,80 @@ server that is among those that may need to be recovered.
     (If you have excluded ``/opt`` from backup, clone/copy your Django
     project in ``/opt`` and create the virtualenv as described in
     :ref:`the_program_files`.)
- 
- 11. Create the log directory as explained in :ref:`the_log_directory`.
 
- 12. Restore your nginx configuration:
+11. Create the log directory as explained in :ref:`the_log_directory`.
 
-     .. code-block:: bash
+12. Restore your nginx configuration:
 
-        service nginx stop
-        rm -r /etc/nginx
-        cp -a /var/tmp/restored_files/etc/nginx /etc
-        service nginx start
+    .. code-block:: bash
 
-     If you use Apache, restore your Apache configuration instead:
+       service nginx stop
+       rm -r /etc/nginx
+       cp -a /var/tmp/restored_files/etc/nginx /etc
+       service nginx start
 
-     .. code-block:: bash
+    If you use Apache, restore your Apache configuration instead:
 
-        service apache2 stop
-        rm -r /etc/apache2
-        cp -a /var/tmp/restored_files/etc/apache2 /etc/
-        service apache2 start
+    .. code-block:: bash
 
- 13. Create your static files directory and run ``collectstatic`` as
-     explained in Chapter "Static and media files", in
-     :ref:`setting_up_django`.
+       service apache2 stop
+       rm -r /etc/apache2
+       cp -a /var/tmp/restored_files/etc/apache2 /etc/
+       service apache2 start
 
- 14. Restore the systemd service file for your Django project and enable
-     the service:
+13. Create your static files directory and run ``collectstatic`` as
+    explained in :ref:`Static and media files <setting_up_django>`.
 
-     .. code-block:: bash
+14. Restore the systemd service file for your Django project and enable
+    the service:
 
-        cd /var/tmp/restored_files
-        cp etc/systemd/system/$DJANGO_PROJECT.service \
-            /etc/systemd/system/
-        systemctl enable $DJANGO_PROJECT
+    .. code-block:: bash
 
- 15. Restore the configuration for the DragonFly Mail Agent:
+       cd /var/tmp/restored_files
+       cp etc/systemd/system/$DJANGO_PROJECT.service \
+           /etc/systemd/system/
+       systemctl enable $DJANGO_PROJECT
 
-     .. code-block:: bash
+15. Restore the configuration for the DragonFly Mail Agent:
 
-        rm -r /etc/dma
-        cp -a /var/tmp/restored_files/etc/dma /etc/
+    .. code-block:: bash
 
- 16. Create the cache directory as described in :ref:`caching`.
+       rm -r /etc/dma
+       cp -a /var/tmp/restored_files/etc/dma /etc/
 
- 17. Restore the databases as explained in :ref:`restoring_sqlite` and
-     :ref:`restoring_postgresql`.
+16. Create the cache directory as described in :ref:`caching`.
 
- 18. Restore the duply configuration:
+17. Restore the databases as explained in :ref:`restoring_sqlite` and
+    :ref:`restoring_postgresql`.
 
-     .. code-block:: bash
+18. Restore the duply configuration:
 
-        rm -r /etc/duply
-        cp -a /var/tmp/restored/files/etc/duply /etc/
+    .. code-block:: bash
 
- 19. Restore the ``duply`` cron job:
+       rm -r /etc/duply
+       cp -a /var/tmp/restored/files/etc/duply /etc/
 
-     .. code-block:: bash
+19. Restore the ``duply`` cron job:
 
-        cp /var/tmp/restored/etc/cron.daily/duply /etc/cron.daily/
+    .. code-block:: bash
 
-     (You may want to list ``/var/tmp/restored/etc/cron.daily`` and
-     ``/etc/cron.daily`` to see if there is any other cronjob that needs
-     restoring.)
+       cp /var/tmp/restored/etc/cron.daily/duply /etc/cron.daily/
 
- 20. Start the Django project and verify it works:
+    (You may want to list ``/var/tmp/restored/etc/cron.daily`` and
+    ``/etc/cron.daily`` to see if there is any other cronjob that needs
+    restoring.)
 
-     .. code-block:: bash
+20. Start the Django project and verify it works:
 
-        service $DJANGO_PROJECT start
+    .. code-block:: bash
 
- 21. Restart the system and verify it works:
+       service $DJANGO_PROJECT start
 
-     .. code-block:: bash
+21. Restart the system and verify it works:
 
-        shutdown -r now
+    .. code-block:: bash
+
+       shutdown -r now
 
 The system might work perfectly without restart; the reason we restart
 it is to verify that if the server restarts, all services will startup
@@ -351,20 +368,20 @@ off hours. In that case, notify management or the customer about what
 you are going to do, pick up an appropriate time, and test the recovery
 with the following procedure:
 
- 1. In the DNS, verify that the TTL of $DOMAIN, www.$DOMAIN, and any
-    other necessary record is no more than 300 seconds or 5 minutes (see
-    :ref:`adding_dns_records`).
+1. In the DNS, verify that the TTL of $DOMAIN, www.$DOMAIN, and any
+   other necessary record is no more than 300 seconds or 5 minutes (see
+   :ref:`adding_dns_records`).
 
- 2. Follow the recovery plan of the previous section to bring up the
-    system on a new server, **but omit the step about changing the
-    DNS**. (Hint: you can :ref:`edit your own hosts file
-    <editing_the_hosts_file>` while checking if the new system works.)
+2. Follow the recovery plan of the previous section to bring up the
+   system on a new server, **but omit the step about changing the
+   DNS**. (Hint: you can :ref:`edit your own hosts file
+   <editing_the_hosts_file>` while checking if the new system works.)
 
- 3. After the system works and you've fixed all problems, change the DNS
-    so that $DOMAIN, www.$DOMAIN, and any other needed name points to
-    the IP address of the new server (see :ref:`adding_dns_records`).
+3. After the system works and you've fixed all problems, change the DNS
+   so that $DOMAIN, www.$DOMAIN, and any other needed name points to
+   the IP address of the new server (see :ref:`adding_dns_records`).
 
- 4. Wait for five minutes, then shut down the old server.
+4. Wait for five minutes, then shut down the old server.
 
 You could have zero downtime by only following the first two steps
 instead of all four, and after you are satisfied discard the *new*
@@ -624,15 +641,15 @@ Scheduling manual operations
 ----------------------------
 
 In the previous chapter, I described stuff that you will eventually
-setup in such a way that it runs alone. Your servers will be backing up
+set up in such a way that it runs alone. Your servers will be backing up
 themselves without your knowing anything about it.  In contrast, all the
 procedures I described in this chapter are to be manually executed by a
 human:
 
- * Restoring part of a system or the whole system
- * Recovery testing
- * Copying offline
- * Recovering from offline backups
+* Restoring part of a system or the whole system
+* Recovery testing
+* Copying offline
+* Recovering from offline backups
 
 Some of these procedures will be triggered by an event, such as losing
 data. Recovery testing, however, and copying offline, will not be
@@ -646,13 +663,13 @@ it, and it is quite likely you will be unable to recover at all.**
 Chapter summary
 ---------------
 
- * Use the provided recovery plan or devise your own.
- * Make sure you will have access to the recovery plan (and all required
-   information such as logins and passwords) even if your server stops
-   existing.
- * Test your recovery plan once a year or so.
- * Backup online as well as to offline disks and store them safely.
- * Don't backup to offline disks at the same time as the system is
-   performing its online backup.
- * Create an offline backup schedule and a recovery testing schedule and
-   make sure they are being followed.
+* Use the provided recovery plan or devise your own.
+* Make sure you will have access to the recovery plan (and all required
+  information such as logins and passwords) even if your server stops
+  existing.
+* Test your recovery plan once a year or so.
+* Backup online as well as to offline disks and store them safely.
+* Don't backup to offline disks at the same time as the system is
+  performing its online backup.
+* Create an offline backup schedule and a recovery testing schedule and
+  make sure they are being followed.

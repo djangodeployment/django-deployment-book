@@ -65,36 +65,36 @@ In order to find out the address that corresponds to a name, your name
 server makes a series of questions to other name servers on the
 Internet:
 
- 1. First, your name server picks up one of thirteen so-called "root
-    name servers". The IP addresses of these thirteen name servers are
-    well-known (the official list is at
-    http://www.internic.net/domain/named.root) and generally do not
-    change, and your name server is preprogrammed to use them.  Your
-    name server tells the the chosen root name server something like
-    this: "Hello, I'd like to know the IP address of
-    djangodeployment.com please."
+1. First, your name server picks up one of thirteen so-called "root
+   name servers". The IP addresses of these thirteen name servers are
+   well-known (the official list is at
+   http://www.internic.net/domain/named.root) and generally do not
+   change, and your name server is preprogrammed to use them.  Your
+   name server tells the the chosen root name server something like
+   this: "Hello, I'd like to know the IP address of
+   djangodeployment.com please."
 
- 2. The root name server replies: "Hi. I don't know the address of
-    djangodeployment.com; you should ask one of these name servers,
-    which are responsible for all domain names ending in '.com'" (and it
-    supplies a number of IP addresses (actually thirteen).
+2. The root name server replies: "Hi. I don't know the address of
+   djangodeployment.com; you should ask one of these name servers,
+   which are responsible for all domain names ending in '.com'" (and it
+   supplies a number of IP addresses (actually thirteen).
 
- 3. Your name server picks up one of the .com name servers and asks it:
-    "Hello, I'd like to know the IP address of djangodeployment.com
-    please."
+3. Your name server picks up one of the .com name servers and asks it:
+   "Hello, I'd like to know the IP address of djangodeployment.com
+   please."
 
- 4. The .com name server replies: "Hi. I don't know the address of
-    djangodeployment.com; you should ask one of these name servers,
-    which are responsible for djangodeployment.com" (and it supplies a
-    number of IP addresses, which at the time of this writing are
-    three).
+4. The .com name server replies: "Hi. I don't know the address of
+   djangodeployment.com; you should ask one of these name servers,
+   which are responsible for djangodeployment.com" (and it supplies a
+   number of IP addresses, which at the time of this writing are
+   three).
 
- 5. Your name server picks up one of the three name servers and asks it:
-    "Hello, I'd like to know the IP address of djangodeployment.com
-    please."
+5. Your name server picks up one of the three name servers and asks it:
+   "Hello, I'd like to know the IP address of djangodeployment.com
+   please."
 
- 6. The djangodeployment.com name server replies: "Sure,
-    djangodeployment.com is 71.19.145.109".
+6. The djangodeployment.com name server replies: "Sure,
+   djangodeployment.com is 71.19.145.109".
 
 After your name server gets this information, it replies to the
 resolver, which in turn replies to your browser.
@@ -167,23 +167,23 @@ example, but if your domain is different ($0.88 domains certainly aren't
 When you register a .com domain name at the registrar's web site, two
 things happen:
 
- 1. The registrar configures some name servers to be the name servers
-    for the domain. For example, when I registered djangodeployment.com
-    at the web site of bookmyname.com, bookmyname.com configured three
-    name servers (nsa.bookmyname.com, nsb.bookmyname.com, and
-    nsc.bookmyname.com) as the djangodeployment.com name servers. These
-    are the three servers that are involved in steps 5 and 6 of the
-    resolving procedure that I presented in the previous section. I am
-    going to call them the **domain's name servers**.
+1. The registrar configures some name servers to be the name servers
+   for the domain. For example, when I registered djangodeployment.com
+   at the web site of bookmyname.com, bookmyname.com configured three
+   name servers (nsa.bookmyname.com, nsb.bookmyname.com, and
+   nsc.bookmyname.com) as the djangodeployment.com name servers. These
+   are the three servers that are involved in steps 5 and 6 of the
+   resolving procedure that I presented in the previous section. I am
+   going to call them the **domain's name servers**.
 
- 2. The registrar notifies the .com name servers that domain
-    djangodeployment.com is registered, and that the site name servers
-    are the three mentioned above. I am going to call the .com name
-    servers the **upstream name servers**. If your domain is
-    mydomain.co.uk, the upstream name servers are those responsible for
-    .co.uk.
+2. The registrar notifies the .com name servers that domain
+   djangodeployment.com is registered, and that the site name servers
+   are the three mentioned above. I am going to call the .com name
+   servers the **upstream name servers**. If your domain is
+   mydomain.co.uk, the upstream name servers are those responsible for
+   .co.uk.
 
- 
+
 .. _adding_dns_records:
 
 Adding records to your domain
@@ -283,22 +283,22 @@ I used to use CNAMEs a lot, but now I avoid them, because they make
 first-time visits a little slower. Assume you want to visit
 "http://www.openmeteo.org/synoptic/irma". Then these things happen:
 
- 1. www.openmeteo.org is resolved, and it turns out to be an alias of
-    ilissos.openmeteo.org.
+1. www.openmeteo.org is resolved, and it turns out to be an alias of
+   ilissos.openmeteo.org.
 
- 2. ilissos.openmeteo.org is resolved to an IP address.
+2. ilissos.openmeteo.org is resolved to an IP address.
 
- 3. The request http://www.openmeteo.org/synoptic/irma is sent to the IP
-    address. The web server redirects it to
-    http://openmeteo.org/synoptic/irma, without the www.
+3. The request http://www.openmeteo.org/synoptic/irma is sent to the IP
+   address. The web server redirects it to
+   http://openmeteo.org/synoptic/irma, without the www.
 
- 4. The request http://openmeteo.org/synoptic/irma is sent to the IP
-    address, and it is redirected to
-    http://openmeteo.org/synoptic/irma/, because I'm using
-    ``APPEND_SLASH = True`` in Django's settings.
+4. The request http://openmeteo.org/synoptic/irma is sent to the IP
+   address, and it is redirected to
+   http://openmeteo.org/synoptic/irma/, because I'm using
+   ``APPEND_SLASH = True`` in Django's settings.
 
- 5. The request http://openmeteo.org/synoptic/irma/ is sent to the IP
-    address, and this time a proper response is returned.
+5. The request http://openmeteo.org/synoptic/irma/ is sent to the IP
+   address, and this time a proper response is returned.
 
 All these steps take a small amount of time which may add up to one
 second or more. This is only for the first request of first time
@@ -416,7 +416,7 @@ used by me.
 Visiting your Django project through the domain
 -----------------------------------------------
 
-In the previous chapter you run Django on a server and it was reachable
+In the previous chapter you ran Django on a server and it was reachable
 through http://$SERVER_IPv4_ADDRESS/. Now you should have setup your
 DNS and have $DOMAIN point to $SERVER_IPv4_ADDRESS. In your Django
 settings, change ``ALLOWED_HOSTS`` to this::

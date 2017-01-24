@@ -455,31 +455,31 @@ have already done the ``migrate`` part), like this:
 
 Do you understand that very clearly? If not, here are some tips:
 
- * Make sure you have a grip on virtualenv_ and `environment
-   variables`_.
- * Python reads the ``PYTHONPATH`` environment variable and adds
-   the specified directories to the Python path.
- * Django reads the ``DJANGO_SETTINGS_MODULE`` environment variable.
-   Because we have set it to "settings", Django will attempt to import
-   ``settings`` instead of the default (the default is
-   ``$DJANGO_PROJECT.settings``, or maybe
-   ``$DJANGO_PROJECT.settings.local``).
- * When Django attempts to import ``settings``, Python looks in its
-   path. Because ``/etc/opt/$DJANGO_PROJECT`` is listed first in
-   ``PYTHONPATH``, Python will first look there for ``settings.py``, and
-   it will find it there.
- * Likewise, when at some point Django attempts to import
-   ``your_django_app``, Python will look in
-   ``/etc/opt/$DJANGO_PROJECT``; it won't find it there, so then it will
-   look in ``/opt/$DJANGO_PROJECT``, since this is next in
-   ``PYTHONPATH``, and it will find it there.
- * If, before running ``manage.py [whatever]``, we had changed directory
-   to ``/opt/$DJANGO_PROJECT``, we wouldn't need to specify
-   that directory in ``PYTHONPATH``, because Python always adds the
-   current directory to its path. This is why, in development, you just
-   tell it ``python manage.py [whatever]`` and it finds your project.
-   We prefer, however, to set the ``PYTHONPATH`` and not change
-   directory; this way our setup will be clearer and more robust.
+* Make sure you have a grip on virtualenv_ and `environment
+  variables`_.
+* Python reads the ``PYTHONPATH`` environment variable and adds
+  the specified directories to the Python path.
+* Django reads the ``DJANGO_SETTINGS_MODULE`` environment variable.
+  Because we have set it to "settings", Django will attempt to import
+  ``settings`` instead of the default (the default is
+  ``$DJANGO_PROJECT.settings``, or maybe
+  ``$DJANGO_PROJECT.settings.local``).
+* When Django attempts to import ``settings``, Python looks in its
+  path. Because ``/etc/opt/$DJANGO_PROJECT`` is listed first in
+  ``PYTHONPATH``, Python will first look there for ``settings.py``, and
+  it will find it there.
+* Likewise, when at some point Django attempts to import
+  ``your_django_app``, Python will look in
+  ``/etc/opt/$DJANGO_PROJECT``; it won't find it there, so then it will
+  look in ``/opt/$DJANGO_PROJECT``, since this is next in
+  ``PYTHONPATH``, and it will find it there.
+* If, before running ``manage.py [whatever]``, we had changed directory
+  to ``/opt/$DJANGO_PROJECT``, we wouldn't need to specify
+  that directory in ``PYTHONPATH``, because Python always adds the
+  current directory to its path. This is why, in development, you just
+  tell it ``python manage.py [whatever]`` and it finds your project.
+  We prefer, however, to set the ``PYTHONPATH`` and not change
+  directory; this way our setup will be clearer and more robust.
 
 .. _virtualenv: http://djangodeployment.com/2016/11/01/virtualenv-demystified/
 .. _environment variables: http://djangodeployment.com/2016/11/07/what-is-the-difference-between-a-shell-variable-and-an-environment-variable/
@@ -509,21 +509,21 @@ directories.
 Chapter summary
 ---------------
 
- * Create a system user and group with the same name as your Django
-   project.
- * Put your Django project in ``/opt``, with all files owned by root.
- * Put your virtualenv in ``/opt/$DJANGO_PROJECT/venv``, with all files
-   owned by root.
- * Put your data files in a subdirectory of ``/var/opt`` with the same
-   name as your Django project, owned by the system user you created. If
-   you are using SQLite, the database file will go in there.
- * Put your settings file in a subdirectory of ``/etc/opt`` with the
-   same name as your Django project, whose user is root, whose group is
-   the system group you created, that is readable by the group and
-   writeable by root, and whose contents belong to root.
- * Precompile the files in ``/opt/$DJANGO_PROJECT`` and
-   ``/etc/opt/$DJANGO_PROJECT``.
- * Run ``manage.py`` as the system user you created, after setting the
-   environment variables
-   ``PYTHONPATH=/etc/opt/$DJANGO_PROJECT:/opt/$DJANGO_PROJECT`` and
-   ``DJANGO_SETTINGS_MODULE=settings``.
+* Create a system user and group with the same name as your Django
+  project.
+* Put your Django project in ``/opt``, with all files owned by root.
+* Put your virtualenv in ``/opt/$DJANGO_PROJECT/venv``, with all files
+  owned by root.
+* Put your data files in a subdirectory of ``/var/opt`` with the same
+  name as your Django project, owned by the system user you created. If
+  you are using SQLite, the database file will go in there.
+* Put your settings file in a subdirectory of ``/etc/opt`` with the
+  same name as your Django project, whose user is root, whose group is
+  the system group you created, that is readable by the group and
+  writeable by root, and whose contents belong to root.
+* Precompile the files in ``/opt/$DJANGO_PROJECT`` and
+  ``/etc/opt/$DJANGO_PROJECT``.
+* Run ``manage.py`` as the system user you created, after setting the
+  environment variables
+  ``PYTHONPATH=/etc/opt/$DJANGO_PROJECT:/opt/$DJANGO_PROJECT`` and
+  ``DJANGO_SETTINGS_MODULE=settings``.

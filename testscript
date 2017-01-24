@@ -358,10 +358,10 @@ apt install -y duply
 mkdir -p /etc/duply/main
 chmod 700 /etc/duply/main
 cat <<-EOF1 >/etc/duply/main/conf
-	GPG_KEY='disabled'
+	GPG_KEY=disabled
 
-	SOURCE='/'
-	TARGET='b2://$ACCOUNT_ID:$APPLICATION_KEY@$NICK-backup/$SERVER_NAME/'
+	SOURCE=/
+	TARGET=b2://$ACC_ID:$APP_KEY@$NICK-backup/$SERVER_NAME/
 
 	MAX_AGE=2Y
 	MAX_FULLS_WITH_INCRS=2
@@ -369,7 +369,7 @@ cat <<-EOF1 >/etc/duply/main/conf
 	DUPL_PARAMS="\$DUPL_PARAMS --full-if-older-than \$MAX_FULLBKP_AGE "
 
 	VERBOSITY=warning
-	ARCH_DIR='/var/cache/duplicity/duply_main/'
+	ARCH_DIR=/var/cache/duplicity/duply_main/
 EOF1
 cat <<-EOF1 >/etc/duply/main/exclude
 	- /dev

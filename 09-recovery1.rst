@@ -183,7 +183,7 @@ says "Show Accout ID and Application Key". Click on that link and it
 will show you your Account ID. If you don't know your Application Key
 (for example, if it's your first time in Backblaze B2) create a new one.
 Take note of both your Account ID and your Application Key; we will need
-them later. I will be calling them $ACCOUNT_ID and $APPLICATION_KEY.
+them later. I will be calling them $ACC_ID and $APP_KEY.
 
 .. _setting_up_duplicity_and_duply:
 
@@ -269,7 +269,7 @@ called ``conf``, with the following contents:
     GPG_KEY=disabled
 
     SOURCE=/
-    TARGET=b2://$ACCOUNT_ID:$APPLICATION_KEY@$NICK-backup/$SERVER_NAME/
+    TARGET=b2://$ACC_ID:$APP_KEY@$NICK-backup/$SERVER_NAME/
 
     MAX_AGE=2Y
     MAX_FULLS_WITH_INCRS=2
@@ -358,7 +358,7 @@ Let's check again the duply configuration file,
     GPG_KEY=disabled
 
     SOURCE=/
-    TARGET=b2://$ACCOUNT_ID:$APPLICATION_KEY@$NICK-backup/$SERVER_NAME/
+    TARGET=b2://$ACC_ID:$APP_KEY@$NICK-backup/$SERVER_NAME/
 
     MAX_AGE=2Y
     MAX_FULLS_WITH_INCRS=2
@@ -442,7 +442,7 @@ Let's check again the duply configuration file,
 
     The ``$DUPL_PARAMS`` and ``$MAX_FULLBKP_AGE`` should be included
     literally in the file, the aren't placeholders such as ``$NICK``,
-    ``$ACCOUNT_ID`` and ``$APPLICATION_KEY``
+    ``$ACC_ID`` and ``$APP_KEY``
     
 **VERBOSITY=warning**
     Options are error, warning, notice, info, and debug. "warning" will
@@ -1011,78 +1011,78 @@ two commands, ``>>/tmp/duply.out``, appends to the file.
 Chapter summary
 ---------------
 
- * Keep some offline backups and regularly test recovery (the next
-   chapter deals with these).
- * Calculate storage costs.
- * Create a bucket in your backup storage. A single bucket for all your
-   deployments is probably enough. You can name it ``$NICK-backup``.
- * Install duply, create directory ``/etc/duply/main``, and chmod it to 700.
- * Create configuration file ``/etc/duply/main/conf`` with these
-   contents:
+* Keep some offline backups and regularly test recovery (the next
+  chapter deals with these).
+* Calculate storage costs.
+* Create a bucket in your backup storage. A single bucket for all your
+  deployments is probably enough. You can name it ``$NICK-backup``.
+* Install duply, create directory ``/etc/duply/main``, and chmod it to 700.
+* Create configuration file ``/etc/duply/main/conf`` with these
+  contents:
 
-   .. code-block:: bash
+  .. code-block:: bash
 
-      GPG_KEY=disabled
+     GPG_KEY=disabled
 
-      SOURCE=/
-      TARGET=b2://$ACCOUNT_ID:$APPLICATION_KEY@$NICK-backup/$SERVER_NAME/
+     SOURCE=/
+     TARGET=b2://$ACC_ID:$APP_KEY@$NICK-backup/$SERVER_NAME/
 
-      MAX_AGE=2Y
-      MAX_FULLS_WITH_INCRS=2
-      MAX_FULLBKP_AGE=3M
-      DUPL_PARAMS="$DUPL_PARAMS --full-if-older-than $MAX_FULLBKP_AGE "
+     MAX_AGE=2Y
+     MAX_FULLS_WITH_INCRS=2
+     MAX_FULLBKP_AGE=3M
+     DUPL_PARAMS="$DUPL_PARAMS --full-if-older-than $MAX_FULLBKP_AGE "
 
-      VERBOSITY=warning
-      ARCH_DIR=/var/cache/duplicity/duply_main/
+     VERBOSITY=warning
+     ARCH_DIR=/var/cache/duplicity/duply_main/
 
- * Create file ``/etc/duply/main/exclude`` with the following contents::
+* Create file ``/etc/duply/main/exclude`` with the following contents::
 
-    - /dev
-    - /proc
-    - /sys
-    - /run
-    - /var/lock
-    - /var/run
-    - /lost+found
-    - /boot
-    - /tmp
-    - /var/tmp
-    - /media
-    - /mnt
-    - /var/cache
-    - /var/crash
-    - /var/swap
-    - /var/swapfile
-    - /var/swap.img
-    - /var/lib/mysql
-    - /var/lib/postgres
+   - /dev
+   - /proc
+   - /sys
+   - /run
+   - /var/lock
+   - /var/run
+   - /lost+found
+   - /boot
+   - /tmp
+   - /var/tmp
+   - /media
+   - /mnt
+   - /var/cache
+   - /var/crash
+   - /var/swap
+   - /var/swapfile
+   - /var/swap.img
+   - /var/lib/mysql
+   - /var/lib/postgres
 
-   If you feel like it, also exclude ``/bin``, ``/lib``, ``/sbin`` and
-   ``/usr``, maybe also ``/opt``.
+  If you feel like it, also exclude ``/bin``, ``/lib``, ``/sbin`` and
+  ``/usr``, maybe also ``/opt``.
 
- * Create file ``/etc/duplicity/main/pre`` with contents similar to the
-   following (delete the PostgreSQL or SQLite part as needed, or add
-   more SQLite commands if you have many SQLite databases):
+* Create file ``/etc/duplicity/main/pre`` with contents similar to the
+  following (delete the PostgreSQL or SQLite part as needed, or add
+  more SQLite commands if you have many SQLite databases):
 
-   .. code-block:: bash
+  .. code-block:: bash
 
-      #!/bin/bash
-      su postgres -c 'pg_dumpall --file=/var/backups/postgresql.dump'
-      echo '.dump' | \
-         sqlite3 /var/opt/$DJANGO_PROJECT/$DJANGO_PROJECT.db \
-             >/var/backups/sqlite-$DJANGO_PROJECT.dump
+     #!/bin/bash
+     su postgres -c 'pg_dumpall --file=/var/backups/postgresql.dump'
+     echo '.dump' | \
+        sqlite3 /var/opt/$DJANGO_PROJECT/$DJANGO_PROJECT.db \
+            >/var/backups/sqlite-$DJANGO_PROJECT.dump
 
-   Chmod the file to 755.
+  Chmod the file to 755.
 
- * Create file ``/etc/cron.daily/duply`` with the following contents:
+* Create file ``/etc/cron.daily/duply`` with the following contents:
 
-   .. code-block:: bash
+  .. code-block:: bash
 
-      #!/bin/bash
-      duply main purge --force >/tmp/duply.out
-      duply main purgeIncr --force >>/tmp/duply.out
-      duply main backup >>/tmp/duply.out
+     #!/bin/bash
+     duply main purge --force >/tmp/duply.out
+     duply main purgeIncr --force >>/tmp/duply.out
+     duply main backup >>/tmp/duply.out
 
-   Chmod the file to 755.
+  Chmod the file to 755.
 
- * Make sure you have a local mail server installed.
+* Make sure you have a local mail server installed.

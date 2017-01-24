@@ -6,17 +6,19 @@ Things you need to know
 
 Before continuing, please make sure you have the necessary background:
 
- * You can develop with **Django** and are familiar with executing stuff
-   like ``python manage.py runserver``.
- * You understand **virtualenv** clearly. If you aren't certain about
-   this, you may find `my blog post on virtualenv`_ helpful.
- * You can create a **Debian** or **Ubuntu** server, login to it with
-   ssh, use scp to copy files, and use some basic commands. If you
-   cannot do this, at http://djangodeployment.com/ you will find a free
-   email course named "Linux servers 101".
- * You must understand some basic encryption principles, that is, what
-   is meant by symmetric and asymmetric or public key encryption. My
-   free "Linux servers 101" course also covers this.
+* You can develop with **Django** and are familiar with executing stuff
+  like ``python manage.py runserver``.
+* You understand **virtualenv** clearly. If you aren't certain about
+  this, you may find `my blog post on virtualenv`_ helpful.
+* You can create a **Debian** or **Ubuntu** server, login to it with
+  ssh, use scp to copy files, and use some basic commands. If you
+  cannot do this, at http://djangodeployment.com/ you will find a free
+  email course named "Linux servers 101".
+* You must understand some basic encryption principles, that is, what
+  is meant by symmetric and asymmetric or public key encryption. My
+  free "Linux servers 101" course also covers this.
+
+.. _setting_up_the_system_locale:
 
 Setting up the system locale
 ----------------------------
@@ -28,13 +30,13 @@ locale is pretty much the first thing you should do on a new server.
 
 The procedure is this:
 
- 1. Open the file ``/etc/locale.gen`` in an editor and make sure the
-    line that begins with "en_US.UTF-8" is uncommented.
- 2. Enter the command ``locale-gen``; this will (re)generate the
-    locales.
- 3. Open the file ``/etc/default/locale`` in an editor, and make sure it
-    contains the line ``LANG=en_US.UTF-8``. Changes in this file require
-    logout and login to take effect.
+1. Open the file ``/etc/locale.gen`` in an editor and make sure the
+   line that begins with "en_US.UTF-8" is uncommented.
+2. Enter the command ``locale-gen``; this will (re)generate the
+   locales.
+3. Open the file ``/etc/default/locale`` in an editor, and make sure it
+   contains the line ``LANG=en_US.UTF-8``. Changes in this file require
+   logout and login to take effect.
 
 Let me now explain what all this is about. The locale consists of a
 language, a country, and a character encoding; "en_US.UTF-8" means
@@ -74,10 +76,10 @@ generate. Usually we only activate a few.
 
 To check that everything is right, do this:
 
- 1. Enter the command ``locale``; everything (except, possibly,
-    ``LANGUAGE`` and ``LC_ALL``) should have the value "en_US.UTF-8".
- 2. Enter the command ``perl -e ''``; it should do nothing and give no
-    message.
+1. Enter the command ``locale``; everything (except, possibly,
+   ``LANGUAGE`` and ``LC_ALL``) should have the value "en_US.UTF-8".
+2. Enter the command ``perl -e ''``; it should do nothing and give no
+   message.
 
 The ``locale`` command merely lists the active locale parameters.
 ``LC_CTYPE``, ``LC_NUMERIC`` etc. are called "locale categories", and
@@ -111,8 +113,8 @@ remark about a Chinese character in a description field. Even if you are
 certain there won't, it doesn't make any sense to constrain yourself to
 an encoding that can represent only a subset of characters when it's
 equally easy to use UTF-8. So you need to make sure you use UTF-8. In
-Chapter 8 we will see that installing PostgreSQL is a process
-particularly sensitive to the system locale settings.
+the chapter about PostgreSQL we will see that installing PostgreSQL is a
+process particularly sensitive to the system locale settings.
 
 The programs you run at the command line will be producing output in
 your chosen encoding. Your terminal reads the bytes produced by these
@@ -235,14 +237,14 @@ Things we need to fix
 Now, of course, this is the wrong way to do it. It's wrong for the
 following reasons:
 
- * The URL http://$SERVER_IPv4_ADDRESS/ is ugly; you need to use a
-   domain name.
- * You have put your project in ``/root``.
- * You are running Django as root.
- * You have Django serve your static files, and you have DEBUG=True.
- * You are using ``runserver``, which is seriously suboptimal and only
-   meant for development.
- * You are using SQLite.
+* The URL http://$SERVER_IPv4_ADDRESS/ is ugly; you need to use a
+  domain name.
+* You have put your project in ``/root``.
+* You are running Django as root.
+* You have Django serve your static files, and you have DEBUG=True.
+* You are using ``runserver``, which is seriously suboptimal and only
+  meant for development.
+* You are using SQLite.
 
 Let's go fix them.
 

@@ -277,8 +277,8 @@ directories scheme is minimal. Likewise if you package your application
 into a ``.deb`` package.
 
 Finally, separating the directories makes it easier to backup only what
-is needed. My backup solution (which we will see in Chapter 9)
-automatically excludes ``/opt`` and ``/var/cache`` from the backup.
+is needed. My backup solution (which we will see in the chapters about
+recovery) may exclude ``/opt`` and ``/var/cache`` from the backup.
 Since the static files can be regenerated, there is no need to back them
 up.
 
@@ -286,21 +286,21 @@ up.
 Chapter summary
 ---------------
 
- * Set ``STATIC_ROOT`` to ``/var/cache/$DJANGO_PROJECT/static/``.
- * Set ``STATIC_URL`` to ``/static/``.
- * Set ``MEDIA_ROOT`` to ``/var/opt/$DJANGO_PROJECT/media/``.
- * Set ``MEDIA_URL`` to ``/media/``.
- * Run ``collectstatic``.
- * In nginx, set ``location /static/ { alias
-   /var/cache/$DJANGO_PROJECT/static/; }``; likewise for media files.
- * In Apache, add ``ProxyPass /static/ !`` before ``ProxyPass /``, and
-   add
+* Set ``STATIC_ROOT`` to ``/var/cache/$DJANGO_PROJECT/static/``.
+* Set ``STATIC_URL`` to ``/static/``.
+* Set ``MEDIA_ROOT`` to ``/var/opt/$DJANGO_PROJECT/media/``.
+* Set ``MEDIA_URL`` to ``/media/``.
+* Run ``collectstatic``.
+* In nginx, set ``location /static/ { alias
+  /var/cache/$DJANGO_PROJECT/static/; }``; likewise for media files.
+* In Apache, add ``ProxyPass /static/ !`` before ``ProxyPass /``, and
+  add
 
-   .. code-block:: apache
+  .. code-block:: apache
 
-       Alias /static/ /var/cache/$DJANGO_PROJECT/static/
-       <Directory /var/cache/$DJANGO_PROJECT/static/>
-           Require all granted
-       </Directory>
+      Alias /static/ /var/cache/$DJANGO_PROJECT/static/
+      <Directory /var/cache/$DJANGO_PROJECT/static/>
+          Require all granted
+      </Directory>
 
-   Likewise for media files.
+  Likewise for media files.

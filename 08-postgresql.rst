@@ -67,9 +67,10 @@ what this means.
    default system locale (found in ``/etc/default/locale``).  If this is
    not UTF-8, the databases will be using an encoding other than UTF-8.
    You really don't want that. If you aren't certain, you can check,
-   using the procedure I explained in Chapter 1, that the default system
-   locale is appropriate. You can also check that PostgreSQL was
-   installed with the correct locale with this command:
+   using the procedure I explained in
+   :ref:`setting_up_the_system_locale`, that the default system locale
+   is appropriate. You can also check that PostgreSQL was installed with
+   the correct locale with this command:
 
    .. code-block:: bash
 
@@ -80,47 +81,24 @@ what this means.
    be three databases (I explain them later on).
 
    If you make an error and install PostgreSQL while the locale is
-   wrong, the easiest way to fix the problem is to uninstall PostgreSQL
-   and delete all the databases:
+   wrong, the easiest way to fix the problem is to drop and recreate the
+   cluster. I explain later what "cluster" means, but what you need to
+   know is that the following procedure will permanently and irrevocably
+   delete all your databases. **Be careful not to type the commands in
+   the wrong window** (you could delete the databases of the wrong
+   server). Fix your locale as described in
+   :ref:`setting_up_the_system_locale`, then execute the following
+   commands:
 
    .. code-block:: bash
 
-      apt purge postgresql-common
+      service postgresql stop
+      pg_dropcluster 9.5 main
+      pg_createcluster 9.5 main
+      service postgresql start
 
-   ``apt remove`` is the opposite of ``apt install``; it uninstalls
-   packages. ``apt purge`` does the same as ``apt remove``, but in
-   addition it removes data and configuration files. It can be
-   dangerous, as you can lose data. Obviously you shouldn't use it if
-   you have databases with useful data.
-
-   Purging package ``postgresql`` is not enough, because ``postgresql``
-   is just a dependency on another package like ``postgresql-9.4`` (it
-   depends on your operating system version), which is the actual
-   package with the PostgreSQL server. This, in turn, has a dependency
-   on ``postgresql-common``. If you purge ``postgresql-common``, all
-   packages that are dependent on it will also be purged, so purging
-   ``postgresql-common`` is the easiest way to ensure that your
-   PostgreSQL server will be purged.
-
-   The command above should remove all contents of ``/var/lib/postgres``
-   (the directory in which databases are stored), but if in doubt you
-   can remove anything remaining:
-
-   .. code-block:: bash
-
-      rm -rf /var/lib/postgres
-
-   ``rm`` is the Unix command that removes files. With the ``-r`` option
-   it recursively removes directories, and ``-f`` means "ask no
-   questions". Obviously you should be very careful. Accidentally
-   inserting a space, like ``rm -rf / var/lib/postgres``, means it will
-   likely remove everything in the root directory.
-
-   After you purge PostgreSQL, fix your system locale as explained in
-   Chapter 1, then re-install PostgreSQL.
-
-   If you have a database with useful data, obviously you can't just do
-   this. Fixing the problem is more advanced and isn't covered by this
+   If you have a database with useful data, obviously you can't do this.
+   Fixing the problem is more advanced and isn't covered by this
    chapter; there is a `question at Stackoverflow`_ that treats it, but
    better finish this chapter first to get a grip on the basics.
 

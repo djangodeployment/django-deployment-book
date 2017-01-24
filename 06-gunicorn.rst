@@ -388,29 +388,29 @@ disabling services. Use whichever you like.
 Chapter summary
 ---------------
 
- * Install ``gunicorn`` and ``gevent`` in your virtualenv.
- * Create file ``/etc/systemd/system/$DJANGO_PROJECT.service`` with
-   these contents:
+* Install ``gunicorn`` and ``gevent`` in your virtualenv.
+* Create file ``/etc/systemd/system/$DJANGO_PROJECT.service`` with
+  these contents:
 
-   .. code-block:: ini
+  .. code-block:: ini
 
-      [Unit]
-      Description=$DJANGO_PROJECT
+     [Unit]
+     Description=$DJANGO_PROJECT
 
-      [Service]
-      User=$DJANGO_USER
-      Group=$DJANGO_GROUP
-      Environment="PYTHONPATH=/etc/opt/$DJANGO_PROJECT:/opt/$DJANGO_PROJECT"
-      Environment="DJANGO_SETTINGS_MODULE=settings"
-      ExecStart=/opt/$DJANGO_PROJECT/venv/bin/gunicorn \
-          --worker-class=gevent --workers=1 \
-          --log-file=/var/log/$DJANGO_PROJECT/gunicorn.log \
-          --bind=127.0.0.1:8000 --bind=[::1]:8000 \
-          $DJANGO_PROJECT.wsgi:application
+     [Service]
+     User=$DJANGO_USER
+     Group=$DJANGO_GROUP
+     Environment="PYTHONPATH=/etc/opt/$DJANGO_PROJECT:/opt/$DJANGO_PROJECT"
+     Environment="DJANGO_SETTINGS_MODULE=settings"
+     ExecStart=/opt/$DJANGO_PROJECT/venv/bin/gunicorn \
+         --worker-class=gevent --workers=1 \
+         --log-file=/var/log/$DJANGO_PROJECT/gunicorn.log \
+         --bind=127.0.0.1:8000 --bind=[::1]:8000 \
+         $DJANGO_PROJECT.wsgi:application
 
-      [Install]
-      WantedBy=multi-user.target
+     [Install]
+     WantedBy=multi-user.target
 
- * Enable the service with ``systemctl enable $DJANGO_PROJECT``, and
-   start/stop/restart it or get its status with ``systemctl $COMMAND
-   $DJANGO_PROJECT``, where $COMMAND is start, stop, restart or status.
+* Enable the service with ``systemctl enable $DJANGO_PROJECT``, and
+  start/stop/restart it or get its status with ``systemctl $COMMAND
+  $DJANGO_PROJECT``, where $COMMAND is start, stop, restart or status.
