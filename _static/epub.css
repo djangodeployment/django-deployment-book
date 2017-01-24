@@ -241,6 +241,8 @@ p.topic-title {
 /* -- admonitions ----------------------------------------------------------- */
 
 div.admonition {
+    background-color: #d9edf7;  /* Added by A.X. */
+    border: solid #bce8f1 1px;  /* Added by A.X. */
     margin-top: 10px;
     margin-bottom: 10px;
     padding: 7px;
