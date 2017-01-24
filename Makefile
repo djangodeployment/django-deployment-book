@@ -108,7 +108,7 @@ epub:
 
 latex:
 	$(SPHINXBUILD) -b latex $(ALLSPHINXOPTS) $(BUILDDIR)/latex
-	./fixtexurls <$(BUILDDIR)/latex/${BASEFILENAME}.tex >/tmp/${BASEFILENAME}.tex
+	./fixlatex <$(BUILDDIR)/latex/${BASEFILENAME}.tex >/tmp/${BASEFILENAME}.tex
 	mv /tmp/${BASEFILENAME}.tex $(BUILDDIR)/latex/${BASEFILENAME}.tex
 	@echo
 	@echo "Build finished; the LaTeX files are in $(BUILDDIR)/latex."
@@ -117,7 +117,7 @@ latex:
 
 latexpdf:
 	$(SPHINXBUILD) -b latex $(ALLSPHINXOPTS) $(BUILDDIR)/latex
-	./fixtexurls <$(BUILDDIR)/latex/${BASEFILENAME}.tex >/tmp/${BASEFILENAME}.tex
+	./fixlatex <$(BUILDDIR)/latex/${BASEFILENAME}.tex >/tmp/${BASEFILENAME}.tex
 	mv /tmp/${BASEFILENAME}.tex $(BUILDDIR)/latex/${BASEFILENAME}.tex
 	@echo "Running LaTeX files through pdflatex..."
 	$(MAKE) -C $(BUILDDIR)/latex all-pdf

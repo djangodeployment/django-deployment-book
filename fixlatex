@@ -1,0 +1,50 @@
+#!/usr/bin/env python
+r'''
+Fix several issues in the Latex file.
+
+Latex should be given as input. The following changes are made, and the
+result is thrown in the standard output:
+
+1. It removes \url{X} and converts it to X for all X that contain a
+   dollar sign. Assumes \url{} doesn't cross line boundaries, which
+   appears to be true.  If this is not done, some strange code appears
+   inside the URLs (and it's also made a link, which doesn't make
+   sense).
+
+2. It formats notes, hints and tips the same as warnings. This is
+   because warnings show in a box, which is nice, but the other
+   admonitions only show with a top and bottom line, which can look
+   confusing depending on where in the page it's shown.
+'''
+
+import re
+import sys
+
+regexp = re.compile(r'''\\url\{
+                          (
+                            [^}]*  # Anything (but end of url),
+                            \$     # then a dollar sign,
+                            [^}]*  # then anything (but end of url)
+                          )
+                        \}          # then end of url
+    ''', flags=re.VERBOSE)
+
+
+def fix_urls(line):
+    return re.sub(regexp, r'\1', line)
+
+
+def fix_admonitions(line):
+    line = line.replace(r'\begin{notice}{tip}',
+                        r'\begin{notice}{warning}')
+    line = line.replace(r'\begin{notice}{note}',
+                        r'\begin{notice}{warning}')
+    line = line.replace(r'\begin{notice}{hint}',
+                        r'\begin{notice}{warning}')
+    return line
+
+
+for line in sys.stdin:
+    line = fix_urls(line)
+    line = fix_admonitions(line)
+    sys.stdout.write(line)
