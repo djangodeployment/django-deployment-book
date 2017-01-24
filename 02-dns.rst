@@ -1,8 +1,8 @@
 DNS
 ===
 
-Introduction to DNS
--------------------
+Introduction to the DNS
+-----------------------
 
 In this book, you will find that I like to show you the code first, even
 if you don't understand it clearly, and then explain to you how things
@@ -29,7 +29,7 @@ djangodeployment.com).
    2605:2700:0:3::4713:916d". The browser will then attempt to connect to
    that IPv6 address. If there is any kind of error, such as the resolver
    being unable to find an IPv6 address (many web servers aren't yet
-   configured to use one), or that IPv6 address not responding (network
+   configured to use one), or the IPv6 address not responding (network
    errors are still more frequent with IPv6 than IPv4), the browser will
    fall back to using the IPv4 address, as I explained above.
 
@@ -65,14 +65,13 @@ In order to find out the address that corresponds to a name, your name
 server makes a series of questions to other name servers on the
 Internet:
 
-1. First, your name server picks up one of thirteen so-called "root
-   name servers". The IP addresses of these thirteen name servers are
+1. First, your name server picks up one of thirteen so-called "root name
+   servers". The IP addresses of these thirteen name servers are
    well-known (the official list is at
    http://www.internic.net/domain/named.root) and generally do not
-   change, and your name server is preprogrammed to use them.  Your
-   name server tells the the chosen root name server something like
-   this: "Hello, I'd like to know the IP address of
-   djangodeployment.com please."
+   change, and your name server is preprogrammed to use them.  Your name
+   server tells the chosen root name server something like this: "Hello,
+   I'd like to know the IP address of djangodeployment.com please."
 
 2. The root name server replies: "Hi. I don't know the address of
    djangodeployment.com; you should ask one of these name servers,
@@ -121,9 +120,9 @@ name servers, which are responsible for djangodeployment.com, and you
 can cache this information (i.e. the list of name servers that are
 responsible for djangodeployment.com) for up to two days". Caching times
 are configurable to various degrees and are usually from 5 minutes to 48
-hours, but caching for a whole week is also not uncommon. Rarely does
-your name server need to go through the complete list of steps; most
-often it will have cached the name servers for the top level domain, and
+hours, but caching for a whole week is not uncommon. Rarely does your
+name server need to go through the complete list of steps; most often it
+will have cached the name servers for the top level domain, and
 sometimes it will also have cached some lower stuff.
 
 So here is the big problem with DNS: it's not hard to get it right (it's
@@ -231,10 +230,10 @@ rest of the text, I will be using $DOMAIN and www.$DOMAIN instead of
 mydomain.com and www.mydomain.com, and you should understand that you
 need to replace "$DOMAIN" with your actual domain.
 
-These four records are normally all that you need to set. In theory you
-can set www.$DOMAIN to point to a different server than $DOMAIN, but
-this is uncommon. You can also define ftp.$DOMAIN and
-whateverelse.$DOMAIN, but this is often not needed.
+These four records are normally all you need to set. In theory you can
+set www.$DOMAIN to point to a different server than $DOMAIN, but this is
+uncommon. You can also define ftp.$DOMAIN and whateverelse.$DOMAIN, but
+this is often not needed.
 
 The TTL, meaning "time to live", is the maximum allowed caching time.
 When a name server asks the domain's name server for the IPv4 address of
@@ -395,11 +394,11 @@ connect (because 1.2.3.4 does not exist), but the thing is that
 mysite.com has resolved to 1.2.3.4. The resolver found it in the
 ``hosts`` file, so it did not ask the DNS server.
 
-I often edit the ``hosts``, for experimenting with a temporary server
-without needing to change the DNS. Sometimes I want to redirect
-a domain to another machine, for development or testing, and I want to
-do this only for myself, without affecting the users of the domain. In
-such cases the ``hosts`` file comes in handy, and the changes made work
+I often edit the ``hosts`` file, for experimenting with a temporary
+server without needing to change the DNS. Sometimes I want to redirect a
+domain to another machine, for development or testing, and I want to do
+this only for myself, without affecting the users of the domain. In such
+cases the ``hosts`` file comes in handy, and the changes made work
 immediately, without needing to wait for DNS caches to expire.
 
 The only thing that you must take care of is to remember to revert the
