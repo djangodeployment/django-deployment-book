@@ -53,7 +53,10 @@ clean:
 	rm -rf $(BUILDDIR)/*
 
 html:
+	mv index.rst index.rst.bak
+	cp index-epub.rst index.rst
 	$(SPHINXBUILD) -b html $(ALLSPHINXOPTS) $(BUILDDIR)/html
+	mv index.rst.bak index.rst
 	@echo
 	@echo "Build finished. The HTML pages are in $(BUILDDIR)/html."
 
@@ -102,12 +105,18 @@ devhelp:
 	@echo "# devhelp"
 
 epub:
+	mv index.rst index.rst.bak
+	cp index-epub.rst index.rst
 	$(SPHINXBUILD) -b epub $(ALLSPHINXOPTS) $(BUILDDIR)/epub
+	mv index.rst.bak index.rst
 	@echo
 	@echo "Build finished. The epub file is in $(BUILDDIR)/epub."
 
 latex:
+	mv index.rst index.rst.bak
+	cp index-latex.rst index.rst
 	$(SPHINXBUILD) -b latex $(ALLSPHINXOPTS) $(BUILDDIR)/latex
+	mv index.rst.bak index.rst
 	./fixlatex <$(BUILDDIR)/latex/${BASEFILENAME}.tex >/tmp/${BASEFILENAME}.tex
 	mv /tmp/${BASEFILENAME}.tex $(BUILDDIR)/latex/${BASEFILENAME}.tex
 	@echo
@@ -116,7 +125,10 @@ latex:
 	      "(use \`make latexpdf' here to do that automatically)."
 
 latexpdf:
+	mv index.rst index.rst.bak
+	cp index-latex.rst index.rst
 	$(SPHINXBUILD) -b latex $(ALLSPHINXOPTS) $(BUILDDIR)/latex
+	mv index.rst.bak index.rst
 	./fixlatex <$(BUILDDIR)/latex/${BASEFILENAME}.tex >/tmp/${BASEFILENAME}.tex
 	mv /tmp/${BASEFILENAME}.tex $(BUILDDIR)/latex/${BASEFILENAME}.tex
 	@echo "Running LaTeX files through pdflatex..."

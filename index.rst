@@ -1,16 +1,4 @@
-====================================================
-Deploying Django on a single Debian or Ubuntu server
-====================================================
-
-.. only:: latex
-
-   .. toctree::
-   
-      meta
-      main_toctree_latex
-
-.. only:: html and epub
-
-   .. toctree::
-
-      main_toctree_epub
+We have a different index file for latex and for html/epub. I tried with
+".. only::" but it doesn't work properly (probably because of a bug,
+probably triggered by the fact that the ".. only::" contains a toctree).
+The Makefile automatically replaces the index with the one needed.
