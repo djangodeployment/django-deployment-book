@@ -54,7 +54,7 @@ clean:
 
 html:
 	mv index.rst index.rst.bak
-	cp index-epub.rst index.rst
+	cp index.rst-epub index.rst
 	$(SPHINXBUILD) -b html $(ALLSPHINXOPTS) $(BUILDDIR)/html
 	mv index.rst.bak index.rst
 	@echo
@@ -106,7 +106,7 @@ devhelp:
 
 epub:
 	mv index.rst index.rst.bak
-	cp index-epub.rst index.rst
+	cp index.rst-epub index.rst
 	$(SPHINXBUILD) -b epub $(ALLSPHINXOPTS) $(BUILDDIR)/epub
 	mv index.rst.bak index.rst
 	@echo
@@ -114,7 +114,7 @@ epub:
 
 latex:
 	mv index.rst index.rst.bak
-	cp index-latex.rst index.rst
+	cp index.rst-latex index.rst
 	$(SPHINXBUILD) -b latex $(ALLSPHINXOPTS) $(BUILDDIR)/latex
 	mv index.rst.bak index.rst
 	./fixlatex <$(BUILDDIR)/latex/${BASEFILENAME}.tex >/tmp/${BASEFILENAME}.tex
@@ -126,7 +126,7 @@ latex:
 
 latexpdf:
 	mv index.rst index.rst.bak
-	cp index-latex.rst index.rst
+	cp index.rst-latex index.rst
 	$(SPHINXBUILD) -b latex $(ALLSPHINXOPTS) $(BUILDDIR)/latex
 	mv index.rst.bak index.rst
 	./fixlatex <$(BUILDDIR)/latex/${BASEFILENAME}.tex >/tmp/${BASEFILENAME}.tex
