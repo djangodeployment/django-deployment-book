@@ -1,0 +1,22 @@
+1.0 (2017-01-26)
+----------------
+
+- Added two chapters: Recovery part 1 and 2.
+- Improved the formatting of admonitions both in PDF and EPUB.
+- Fixed some typos and formatting errors.
+- Removed references to chapter numbers, as in EPUB they are unnumbered.
+- In PostgreSQL, replaced the drop-and-recreate-the-cluster procedure with an
+  easier and saner one.
+
+0.2 (2017-01-19)
+----------------
+
+- Fixed error on PDF where instead of http://$DOMAIN/ it would show something
+  like http://\protect\P1\dollarsignDOMAIN.
+- Added page with meta information.
+- Fixed some typos.
+
+0.1 (2016-12-22)
+----------------
+
+- Initial release.
