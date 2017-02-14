@@ -331,7 +331,7 @@ contents::
     - /var/swapfile
     - /var/swap.img
     - /var/lib/mysql
-    - /var/lib/postgres
+    - /var/lib/postgresql
 
 You can now backup your system by executing this command:
 
@@ -506,7 +506,7 @@ specified two sections ago is this::
     - /var/swapfile
     - /var/swap.img
     - /var/lib/mysql
-    - /var/lib/postgres
+    - /var/lib/postgresql
 
 **/dev, /proc, /sys**
    In these directories you will not find real files. ``/dev`` contains
@@ -603,7 +603,7 @@ specified two sections ago is this::
    If the system crashes the kernel may dump some debugging information
    in there.
 
-**/var/lib/mysql, /var/lib/postgres**
+**/var/lib/mysql, /var/lib/postgresql**
    We won't directly backup your databases. Section "Backing up
    databases" explains why and how.
 
@@ -1055,7 +1055,7 @@ Chapter summary
    - /var/swapfile
    - /var/swap.img
    - /var/lib/mysql
-   - /var/lib/postgres
+   - /var/lib/postgresql
 
   If you feel like it, also exclude ``/bin``, ``/lib``, ``/sbin`` and
   ``/usr``, maybe also ``/opt``.

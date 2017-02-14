@@ -397,7 +397,7 @@ cat <<-EOF1 >/etc/duply/main/exclude
 	- /var/swapfile
 	- /var/swap.img
 	- /var/lib/mysql
-	- /var/lib/postgres
+	- /var/lib/postgresql
 EOF1
 cat <<-EOF1 >/etc/duply/main/pre
 	#!/bin/bash
