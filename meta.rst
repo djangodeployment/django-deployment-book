@@ -6,3 +6,6 @@
 All rights reserved, except for the code and configuration snippets; to
 the extent possible under law, Antonis Christofides has waived all
 copyright and related or neighboring rights to said snippets.
+
+I am grateful to Markus Holtermann for a couple of useful comments on
+the chapter about the web server.

@@ -405,6 +405,13 @@ the contents of the directory instead of the directory itself.)
 Running the Django server
 -------------------------
 
+.. warning::
+
+   We are running Django with ``runserver`` here, which is inappropriate
+   for production. We are doing it only temporarily, so that you
+   understand several concepts. We will run Django correctly in the
+   chapter about :ref:`gunicorn`.
+
 .. code-block:: bash
 
     su $DJANGO_USER
@@ -428,8 +435,8 @@ have already done the ``migrate`` part), like this:
 .. hint:: su
 
    You have probably heard of ``sudo``, which is a very useful program
-   on Unix client machines (desktops and laptops). On server, ``sudo``
-   is less common and we use ``su`` instead
+   on Unix client machines (desktops and laptops). On the server,
+   ``sudo`` is less common and we use ``su`` instead.
 
    ``su``, like ``sudo``, changes the user that executes a program. If
    you are user joe and you execute ``su -c ls``, then ``ls`` is run as
@@ -501,10 +508,7 @@ doesn't work correctly together with ``--pythonpath``, at least not in
 Django 1.8.)
 
 If you fire up your browser and visit http://$DOMAIN:8000/, you should
-see your Django project in action. Still wrong of course; we are still
-using the Django development server, but we have accomplished another
-step, which was to use an appropriate user and put stuff in appropriate
-directories.
+see your Django project in action.
 
 Chapter summary
 ---------------

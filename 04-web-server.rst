@@ -210,6 +210,13 @@ enough:
 Now go to http://$DOMAIN/ and you should see your Django
 project in action.
 
+.. warning::
+
+   We are running Django with ``runserver`` here, which is inappropriate
+   for production. We are doing it only temporarily, so that you
+   understand the concepts. We will run Django correctly in the chapter
+   about :ref:`gunicorn`.
+
 Nginx receives your HTTP request. Because of the ``proxy_pass``
 directive, it decides to just pass on this request to another server,
 which in our case is localhost:8000.
@@ -440,6 +447,13 @@ enough:
 
 Now go to http://$DOMAIN/ and you should see your Django project in
 action.
+
+.. warning::
+
+   We are running Django with ``runserver`` here, which is inappropriate
+   for production. We are doing it only temporarily, so that you
+   understand the concepts. We will run Django correctly in the chapter
+   about :ref:`gunicorn`.
 
 Apache receives your HTTP request. Because of the ``ProxyPass``
 directive, it decides to just pass on this request to another server,
