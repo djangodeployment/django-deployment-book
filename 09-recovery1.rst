@@ -953,24 +953,7 @@ Make the file executable:
 
    chmod 755 /etc/cron.daily/duply
 
-In Unix-like systems, cron is the standard scheduler; it executes tasks
-at specified times. Scripts in ``/etc/cron.daily`` are executed once
-daily, starting at 06:25 (am) local time. The time to which this
-actually refers depends on the system's time zone, which you can find by
-examining the contents of the file ``/etc/timezone``. In most of my
-servers, I use UTC. Backup time doesn't really matter much, but it's
-better to do it when the system is not very busy. For time zones with a
-positive UTC offset, 06:25 UTC could be a busy time, so you might want
-to change the system time zone with this command:
-
-.. code-block:: bash
-
-   dpkg-reconfigure tzdata
-
-There is a way to tell cron exactly at what time you want a task to run,
-but I won't go into that as throwing stuff into ``/etc/cron.daily``
-should be sufficient for most use cases.
-
+We saw about cron in :ref:`Clearing sessions <clearing_sessions>`.
 In the ``/etc/cron.daily/duply`` script, the first command, ``purge``,
 will delete full backups that are older than ``MAX_AGE``. The second
 command, ``purgeIncr``, will delete incremental backups that build on
@@ -980,17 +963,12 @@ full backup is due. A full backup is due if you have never backed up in
 the past, or if the latest full backup was done more than
 ``MAX_FULLBKP_AGE`` ago.
 
-Cron expects all the programs it runs to be silent, i.e., to not display
-any output. If they do display output, cron emails that output to the
-administrator. This is very neat, because if your tasks only display
-output when there is an error, you will be emailed only when there is an
-error.
-
-Duply, however, displays a lot of information even when everything's
-working fine. For this reason, we redirect its output to a file,
+Duply displays a lot of information even when everything's working fine,
+which would result in ``cron`` to email the administrator. We only want
+to be emailed in case of error, so we redirect duply's output to a file,
 ``/tmp/duply.out``. We only redirect its standard output, not its
 standard error, which means that error (and warning) messages will still
-be caught by cron and email. Note, however, that ``/tmp/duply.out`` is
+be caught by cron and emailed. Note, however, that ``/tmp/duply.out`` is
 not a complete log file, because it only contains the standard output,
 not the standard error. It might have been better to include both output
 and error in ``/tmp/duply.out``, and in addtion display the standard

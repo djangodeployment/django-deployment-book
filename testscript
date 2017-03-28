@@ -345,6 +345,14 @@ EOF1
 echo "$EMAIL_HOST_USER|$EMAIL_HOST:$EMAIL_HOST_PASSWORD" >/etc/dma/auth.conf
 echo "$DOMAIN" >/etc/mailname
 restart-$DJANGO_PROJECT
+cat <<-EOF1 >/etc/cron.daily/$DJANGO_PROJECT-clearsessions
+	#!/bin/bash
+	export PYTHONPATH=/etc/opt/$DJANGO_PROJECT:/opt/$DJANGO_PROJECT
+	export DJANGO_SETTINGS_MODULE=settings
+	su $DJANGO_USER -c "/opt/$DJANGO_PROJECT/venv/bin/python \
+	    /opt/$DJANGO_PROJECT/manage.py clearsessions"
+EOF1
+chmod 755 /etc/cron.daily/$DJANGO_PROJECT-clearsessions
 
 #
 # POSTGRESQL missing

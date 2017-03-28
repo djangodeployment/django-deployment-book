@@ -1,5 +1,5 @@
-Django production settings
-==========================
+Production settings
+===================
 
 So far the only thing we've done in our production settings was to setup
 ``ALLOWED_HOSTS``. We still have some work to do. It is absolutely
@@ -232,10 +232,9 @@ is better:
    once per day. Whenever a program run by ``cron`` throws an error
    message, ``cron`` emails that error message to the administrator.
    ``cron`` always works with a local mail server. If you don't install
-   a local mail server, you will miss these error messages. In the chapters
-   about recovery we will setup the backup for your server to run with
-   ``cron``, and you don't want to miss any error messages from your
-   backup system!
+   a local mail server, you will miss these error messages. We will
+   later use ``cron`` to clear sessions and to backup the server, and we
+   don't want to miss any error messages.
 
 2. While Django attempts to send an error email, if something goes
    wrong, it fails silently. This behaviour is appropriate (the system
@@ -556,6 +555,66 @@ which will run the above script. The ``set -e`` command tells bash to
 stop executing the script when an error occurs, and the ``-q`` parameter
 to ``compileall`` tells to not print the list of files compiled.
 
+.. _clearing_sessions:
+
+Clearing sessions
+-----------------
+
+If you use ``django.contrib.sessions``, Django stores session data in
+the database (unless you use using a different SESSION_ENGINE_).
+Django does not automatically clean up the sessions table, so most of
+the sessions remain in the database even after they expire. I've seen
+sessions tables in small deployments of only a few requests per minute
+grow to several hundreds of GB through the years. You can manually
+remove expired sessions by executing ``python manage.py clearsessions``.
+
+To make sure your sessions are being cleared regularly, create file
+``/etc/cron.daily/$DJANGO_PROJECT-clearsessions`` with the following
+contents:
+
+.. code-block:: bash
+
+   #!/bin/bash
+   export PYTHONPATH=/etc/opt/$DJANGO_PROJECT:/opt/$DJANGO_PROJECT
+   export DJANGO_SETTINGS_MODULE=settings
+   su $DJANGO_USER -c "/opt/$DJANGO_PROJECT/venv/bin/python \
+       /opt/$DJANGO_PROJECT/manage.py clearsessions"
+
+Make the file executable:
+
+.. code-block:: bash
+
+   chmod 755 /etc/cron.daily/$DJANGO_PROJECT-clearsessions
+
+In Unix-like systems, cron is the standard scheduler; it executes tasks
+at specified times. Scripts in ``/etc/cron.daily`` are executed once
+daily, starting at 06:25 (am) local time. The time to which this
+actually refers depends on the system's time zone, which you can find by
+examining the contents of the file ``/etc/timezone``. In most of my
+servers, I use UTC. The time during which these scripts are run doesn't
+really matter much, but it's better to do it when the system is not very
+busy—especially if some of the scripts are intensive, such as backup
+(which we will see in a later chapter).  For time zones with a
+positive UTC offset, 06:25 UTC could be a busy time, so you might want
+to change the system time zone with this command:
+
+.. code-block:: bash
+
+   dpkg-reconfigure tzdata
+
+There is a way to tell cron exactly at what time you want a task to run,
+but I won't go into that as throwing stuff into ``/etc/cron.daily``
+should be sufficient for most use cases.
+
+Cron expects all the programs it runs to be silent, i.e., to not display
+any output. If they do display output, cron emails that output to the
+administrator. This is very neat, because if your tasks only display
+output when there is an error, you will be emailed only when there is an
+error. However, for this to work, you must setup a local mail server
+as explained in :ref:`using_a_local_mail_server`.
+
+.. _SESSION_ENGINE: https://docs.djangoproject.com/en/1.10/ref/settings/#session-engine
+
 Chapter summary
 ---------------
 
@@ -582,6 +641,23 @@ Chapter summary
 
      mkdir /var/cache/$DJANGO_PROJECT/cache
      chown $DJANGO_USER /var/cache/$DJANGO_PROJECT/cache
+
+* Create file ``/etc/cron.daily/$DJANGO_PROJECT-clearsessions`` with the
+  following contents:
+
+  .. code-block:: bash
+
+     #!/bin/bash
+     export PYTHONPATH=/etc/opt/$DJANGO_PROJECT:/opt/$DJANGO_PROJECT
+     export DJANGO_SETTINGS_MODULE=settings
+     su $DJANGO_USER -c "/opt/$DJANGO_PROJECT/venv/bin/python \
+         /opt/$DJANGO_PROJECT/manage.py clearsessions"
+
+  Make the file executable:
+
+  .. code-block:: bash
+
+     chmod 755 /etc/cron.daily/$DJANGO_PROJECT-clearsessions
 
 * Finally, this is the whole ``settings.py`` file:
 
