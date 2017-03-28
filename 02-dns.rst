@@ -151,7 +151,7 @@ random. Its web site is unpolished but it works. Another French
 registrar, particularly popular in the free software community, is
 Gandi, but it's a bit more expensive than others. The most popular
 registrar worldwide is GoDaddy, but it supported SOPA, and for me that's
-a showstopper. Another interesting option is Namecheap; I think its
+a deal breaker. Another interesting option is Namecheap; I think its
 software is nice and its prices are reasonable. If you don't know what
 to do, choose that one. There are also dozens of other options, and it's
 fine to choose another one. Note that I'm not affiliated with any
