@@ -7,4 +7,5 @@ All rights reserved, except for the code and configuration snippets; to
 the extent possible under law, Antonis Christofides has waived all
 copyright and related or neighboring rights to said snippets.
 
-Markus Holtermann and Chris Pantazis have also made useful comments.
+I am grateful to Curtis Maloney for a review of the Gunicorn chapter;
+and to Markus Holtermann and Chris Pantazis for useful comments.
