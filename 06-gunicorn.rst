@@ -99,9 +99,7 @@ application servers" instead.
 
 Gunicorn has many parameters that can configure its behaviour. Most of
 them work fine with their default values. Still, we need to modify a
-few. First, let's install ``gevent``. Make sure the virtualenv is
-activated, and run ``pip install gevent``. Next, let's run Gunicorn
-again, but this time with a few parameters:
+few. Let's run it again, but this time with a few parameters:
 
 .. code-block:: bash
 
@@ -109,61 +107,35 @@ again, but this time with a few parameters:
    source /opt/$DJANGO_PROJECT/venv/bin/activate
    export PYTHONPATH=/etc/opt/$DJANGO_PROJECT:/opt/$DJANGO_PROJECT
    export DJANGO_SETTINGS_MODULE=settings
-   gunicorn --worker-class=gevent --workers=1 \
+   gunicorn --workers=4 \
        --log-file=/var/log/$DJANGO_PROJECT/gunicorn.log \
        --bind=127.0.0.1:8000 --bind=[::1]:8000 \
        $DJANGO_PROJECT.wsgi:application 
 
 Here is what these parameters mean:
 
-``--worker-class=gevent``
-   There are many ways in which Gunicorn can do multi-processing. The
-   default one is ``sync``. With that one, Gunicorn starts a number of
-   processes called "workers", and each process, each worker that is,
-   serves one request at a time. To serve five concurrent requests, five
-   workers are needed; if there are more than five concurrent requests,
-   they will be queued.
+``--workers=4``
+   Gunicorn starts a number of processes called "workers", and each
+   process, each worker that is, serves one request at a time. To serve
+   five concurrent requests, five workers are needed; if there are more
+   concurrent requests than workers, they will be queued.  You probably
+   need two to five workers per processor core. Four workers are a good
+   starting point for a single-core machine. The reason you don't want
+   to increase this too much is that your Django project's RAM
+   consumption is approximately proportional to the number of workers,
+   as each worker is effectively a distinct instance of the Django
+   project. If you are short on RAM, you might want to consider
+   decreasing the number of workers.  If you get many concurrent
+   requests and your CPU is underused (usually meaning your Django
+   projects do a lot of disk/database access) and you can spare the RAM,
+   you can increase the number of workers.
 
-   ``gevent``, on the other hand, is event-driven. If you don't
-   understand what this means, read my `Apache vs. nginx`_ blog post.
-   ``sync`` works like Apache (except that the most common setup for
-   Apache is for it to use threads, whereas Gunicorn's ``sync`` mode
-   uses processes, which consume more memory than threads and are more
-   expensive in context switching as well). ``gevent`` works like
-   nginx—a single process can serve many concurrent requests, using
-   events.
+   .. tip:: Check your CPU and RAM usage
 
-   Note that to use ``gevent``, your Django apps must be thread-safe. If
-   you use global variables, for example, it's not going to work;
-   if you serve two requests at the same time, your code is running two
-   times concurrently, and if one thread of execution changes a global
-   variable, this can interfere with the other thread. In this respect,
-   ``sync`` is safer, because it can run broken apps. However, if your
-   apps are broken, you'd really better fix them, you can't get away
-   with it.
-
-   How is it possible for ``gevent`` to work asynchronously when your
-   Django code is designed to run synchronously? When your Django code,
-   for example, wants to retrieve an object from the database via a
-   network connection, the process should get blocked at the point where
-   your code says ``x.objects.get(id=18)``. ``gevent`` achieves
-   asynchronous behaviour by changing the way the Python library works.
-   It replaces some functions which get blocked with asynchronous
-   versions that return immediately, allowing ``gevent`` to execute
-   other coroutines while waiting for the data to come (a "coroutine" is
-   the equivalent of a thread in asynchronous programming).
-
-   .. _apache vs. nginx: http://djangodeployment.com/2016/11/15/why-nginx-is-faster-than-apache-and-why-you-neednt-necessarily-care/
-
-``--workers=1``
-   This parameter specifies how many processes ``Gunicorn`` will start.
-   For ``gevent``, you only need one process per processor core. If you
-   use ``sync`` you need more, maybe 2 to 5 per processor core.
-
-   The default for this setting is 1. However, even if you use
-   ``gevent`` on a single core virtual server, this is such an important
-   setting that it's better to specify it explicitly and not rely on the
-   default value.
+      If your server gets busy, the Linux ``top`` command will show you
+      useful information about the amount of free RAM, the RAM consumed
+      by your Django project (and other system processes), and the CPU
+      usage for various processes.
 
 ``--log-file=/var/log/$DJANGO_PROJECT/gunicorn.log``
    I believe this is self-explanatory.
@@ -240,7 +212,7 @@ contents:
    Environment="PYTHONPATH=/etc/opt/$DJANGO_PROJECT:/opt/$DJANGO_PROJECT"
    Environment="DJANGO_SETTINGS_MODULE=settings"
    ExecStart=/opt/$DJANGO_PROJECT/venv/bin/gunicorn \
-       --worker-class=gevent --workers=1 \
+       --workers=4 \
        --log-file=/var/log/$DJANGO_PROJECT/gunicorn.log \
        --bind=127.0.0.1:8000 --bind=[::1]:8000 \
        $DJANGO_PROJECT.wsgi:application
@@ -387,10 +359,11 @@ the same command in both. The ``systemctl`` version may be more
 consistent with other systemd commands, like the ones for enabling and
 disabling services. Use whichever you like.
 
+
 Chapter summary
 ---------------
 
-* Install ``gunicorn`` and ``gevent`` in your virtualenv.
+* Install ``gunicorn`` in your virtualenv.
 * Create file ``/etc/systemd/system/$DJANGO_PROJECT.service`` with
   these contents:
 
@@ -405,7 +378,7 @@ Chapter summary
      Environment="PYTHONPATH=/etc/opt/$DJANGO_PROJECT:/opt/$DJANGO_PROJECT"
      Environment="DJANGO_SETTINGS_MODULE=settings"
      ExecStart=/opt/$DJANGO_PROJECT/venv/bin/gunicorn \
-         --worker-class=gevent --workers=1 \
+         --workers=4 \
          --log-file=/var/log/$DJANGO_PROJECT/gunicorn.log \
          --bind=127.0.0.1:8000 --bind=[::1]:8000 \
          $DJANGO_PROJECT.wsgi:application

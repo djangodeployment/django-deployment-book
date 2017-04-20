@@ -241,7 +241,7 @@ fi
 # GUNICORN
 #
 
-/opt/$DJANGO_PROJECT/venv/bin/pip install gunicorn gevent
+/opt/$DJANGO_PROJECT/venv/bin/pip install gunicorn
 cat <<-EOF1 >/etc/systemd/system/$DJANGO_PROJECT.service
 	[Unit]
 	Description=$DJANGO_PROJECT
@@ -252,7 +252,7 @@ cat <<-EOF1 >/etc/systemd/system/$DJANGO_PROJECT.service
 	Environment="PYTHONPATH=/etc/opt/$DJANGO_PROJECT:/opt/$DJANGO_PROJECT"
 	Environment="DJANGO_SETTINGS_MODULE=settings"
 	ExecStart=/opt/$DJANGO_PROJECT/venv/bin/gunicorn \
-	    --worker-class=gevent --workers=1 \
+	    --workers=4 \
 	    --log-file=/var/log/$DJANGO_PROJECT/gunicorn.log \
 	    --bind=127.0.0.1:8000 --bind=[::1]:8000 \
 	    $DJANGO_PROJECT.wsgi:application
