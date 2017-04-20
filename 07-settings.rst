@@ -663,7 +663,7 @@ Chapter summary
 
   .. code-block:: python
 
-      from django_project.settings.base import *
+      from django_project.settings import *
 
       debug = false
       allowed_hosts = ['$domain', 'www.$domain']

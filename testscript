@@ -57,7 +57,7 @@ chown $DJANGO_USER /var/log/$DJANGO_PROJECT
 # The production settings
 mkdir -p /etc/opt/$DJANGO_PROJECT
 cat <<-EOF1 >/etc/opt/$DJANGO_PROJECT/settings.py
-	from $DJANGO_PROJECT.settings.base import *
+	from $DJANGO_PROJECT.settings import *
 
 	DEBUG = True
 	ALLOWED_HOSTS = ['$DOMAIN', 'www.$DOMAIN']
@@ -175,7 +175,7 @@ fi
 
 # Setting up Django
 cat <<-EOF1 >/etc/opt/$DJANGO_PROJECT/settings.py
-	from $DJANGO_PROJECT.settings.base import *
+	from $DJANGO_PROJECT.settings import *
 
 	DEBUG = True
 	ALLOWED_HOSTS = ['$DOMAIN', 'www.$DOMAIN']
@@ -268,7 +268,7 @@ service $DJANGO_PROJECT start
 #
 
 cat <<-EOF1 >/etc/opt/$DJANGO_PROJECT/settings.py
-	from $DJANGO_PROJECT.settings.base import *
+	from $DJANGO_PROJECT.settings import *
 
 	DEBUG = False
 	ALLOWED_HOSTS = ['$DOMAIN', 'www.$DOMAIN']

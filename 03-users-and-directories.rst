@@ -189,7 +189,7 @@ later it will have a bit more. Your
 
 .. code-block:: Python
 
-    from DJANGO_PROJECT.settings.base import *
+    from DJANGO_PROJECT.settings import *
 
     DEBUG = True
     ALLOWED_HOSTS = ['$DOMAIN', 'www.$DOMAIN']
@@ -211,57 +211,6 @@ later it will have a bit more. Your
    places, like in this Python, you have to actually replace it
    yourself. (Occasionally I use DJANGO_PROJECT without the leading
    dollar sign, in order to get the syntax highlighter to work.)
-
-I have assumed that your project uses the convention of having, instead
-of a single ``settings.py`` file, a ``settings`` directory containing
-``__init__.py`` and ``base.py``. ``base.py`` is the base settings, those
-that are the same whether in production or development or testing. The
-directory often contains ``local.py`` (alternatively named ``dev.py``),
-with common development settings, which might or might not be in the
-repository. There's often also ``test.py``, settings that are used when
-testing. Both ``local.py`` and ``test.py`` start with this line::
-
-    from .base import *
-
-Then they go on to override the base settings or add more settings.
-When the project is set up like this, ``manage.py`` is usually modified
-so that, by default, it uses ``$DJANGO_PROJECT.settings.local`` instead
-of simply ``$DJANGO_PROJECT.settings``. For more information on this
-technique, see Section 5.2, "Using Multiple Settings Files", in the book
-Two Scoops of Django; there's also a `stackoverflow answer`_ about it.
-
-.. _stackoverflow answer: http://stackoverflow.com/questions/1626326/how-to-manage-local-vs-production-settings-in-django/15325966#15325966
-
-Now, people who use this scheme sometimes also have ``production.py`` in
-the settings directory of the repository. Call me a perfectionist (with
-deadlines), but the production settings are the administrator's job, not
-the developer's, and your django project's repository is made by the
-developers. You might claim that you are both the developer and the
-administrator, since it's you who are developing the project and
-maintaining the deployment, but in this case you are assuming two roles,
-wearing a different hat each time.  Production settings don't belong in
-the project repository any more than the nginx or PostgreSQL
-configuration does.
-
-The proper place to store such settings is another repository, which
-contains the "recipe" for setting up a server, with a configuration
-management system such as Ansible.  This, however, takes time to learn
-and setup, and your deadlines are probably sooner. So you may need to
-compromise and store your production settings elsewhere, even in your
-project repository. If you do that, then your
-``/etc/opt/$DJANGO_PROJECT/settings.py`` file shall eventually be a
-single line::
-
-    from $DJANGO_PROJECT.settings.production import *
-
-However, I don't want you to do this now. We aren't yet going to use our
-real production settings, because we are going step by step. Instead,
-create the ``/etc/opt/$DJANGO_PROJECT/settings.py`` file as I explained
-in the beginning of this section.
-
-If you don't use this pattern at all, and you have a single
-``settings.py`` file, you should be importing from that one
-(``$DJANGO_PROJECT.settings``) instead.
 
 Let's now **secure the production settings**. We don't want other users
 of the system to be able to read the file, because it contains sensitive
@@ -401,6 +350,60 @@ the contents of the directory instead of the directory itself.)
    much more than the other one, because it is so much easier to type,
    and because converting permissions into octal becomes second nature
    with a little practice.
+
+Managing production vs. development settings
+--------------------------------------------
+
+How to manage production vs. development settings seems to be an eternal
+question. Many people recommend, instead of a single ``settings.py``
+file, a ``settings`` directory containing ``__init__.py`` and
+``base.py``. ``base.py`` is the base settings, those that are the same
+whether in production or development or testing. The directory often
+contains ``local.py`` (alternatively named ``dev.py``), with common
+development settings, which might or might not be in the repository.
+There's often also ``test.py``, settings that are used when testing.
+Both ``local.py`` and ``test.py`` start with this line::
+
+    from .base import *
+
+Then they go on to override the base settings or add more settings.
+When the project is set up like this, ``manage.py`` is usually modified
+so that, by default, it uses ``$DJANGO_PROJECT.settings.local`` instead
+of simply ``$DJANGO_PROJECT.settings``. For more information on this
+technique, see Section 5.2, "Using Multiple Settings Files", in the book
+Two Scoops of Django; there's also a `stackoverflow answer`_ about it.
+
+.. _stackoverflow answer: http://stackoverflow.com/questions/1626326/how-to-manage-local-vs-production-settings-in-django/15325966#15325966
+
+Now, people who use this scheme sometimes also have ``production.py`` in
+the settings directory of the repository. Call me a perfectionist (with
+deadlines), but the production settings are the administrator's job, not
+the developer's, and your django project's repository is made by the
+developers. You might claim that you are both the developer and the
+administrator, since it's you who are developing the project and
+maintaining the deployment, but in this case you are assuming two roles,
+wearing a different hat each time.  Production settings don't belong in
+the project repository any more than the nginx or PostgreSQL
+configuration does.
+
+The proper place to store such settings is another repository—the
+deployment repository. It can be as simple as holding only the
+production ``settings.py`` (along with ``README`` and ``.gitignore``),
+or as complicated as containing all your nginx, PostgreSQL, etc.,
+configuration for several servers, along with the "recipe" for how to
+set them up, written with a configuration management system such as
+Ansible.
+
+If you choose, however, to keep your production settings in your Django
+project repository, then your ``/etc/opt/$DJANGO_PROJECT/settings.py``
+file shall eventually be a single line::
+
+    from $DJANGO_PROJECT.settings.production import *
+
+However, I don't want you to do this now. We aren't yet going to use our
+real production settings, because we are going step by step. Instead,
+create the ``/etc/opt/$DJANGO_PROJECT/settings.py`` file as I explained
+in the previous section.
 
 Running the Django server
 -------------------------
