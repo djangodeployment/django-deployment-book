@@ -32,6 +32,14 @@ sure I not just backup the database file, but also backup a plain text
 dump of the database. I trust plain text dumps more than database files
 in case there is silent corruption that can go unnoticed for some time.
 
+One problem with SQLite is that you may choose to go with it now that
+your database is small and your users are few, but you can't really be
+certain what it will be like in three or five years. If for some reason
+the database has grown or the users have increased, SQLite might be
+unable to handle it. Migrating to PostgreSQL at that stage could be a
+nightmare. So the safe option is to use PostgreSQL straight from the
+beginning.
+
 As for MySQL, I never understood why it has become so popular when
 there's PostgreSQL around. My only explanation is it was marketed
 better. PostgreSQL is more powerful, it is easier, and it has better
