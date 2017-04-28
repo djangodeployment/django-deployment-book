@@ -3,6 +3,7 @@ Deploying Django on a single Debian or Ubuntu server
 ====================================================
 
 .. toctree::
+   :numbered:
 
    01-getting-started
    02-dns

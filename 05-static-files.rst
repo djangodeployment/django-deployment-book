@@ -88,16 +88,13 @@ get a search icon (if you don't use ``django.contrib.admin``, pick up
 another static file that you expect to see, or browse the directory
 ``/var/cache/$DJANGO_PROJECT/static``).
 
-.. only:: latex
+:numref:`how_static_files_work_nginx` explains how this works.
 
-   The figure in the next page explains how this works. Go study it now,
-   and after everything is clear, come back here.
-
-.. only:: html
-
-   This picture explains how it works:
+.. _how_static_files_work_nginx:
 
 .. figure:: how-static-files-work-nginx.png
+
+   How Django static files work in production (nginx version)
 
 The only thing that remains to clear up is what exactly these
 ``location`` blocks mean. ``location /static/`` means that the
@@ -148,16 +145,13 @@ get a search icon (if you don't use ``django.contrib.admin``, pick up
 another static file that you expect to see, or browse the directory
 ``/var/cache/$DJANGO_PROJECT/static``).
 
-.. only:: latex
+:numref:`how_static_files_work_apache` explains how this works.
 
-   The figure in the next page explains how this works. Go study it now,
-   and after everything is clear, come back here.
-
-.. only:: html
-
-   This picture explains how it works:
+.. _how_static_files_work_apache:
 
 .. figure:: how-static-files-work-apache.png
+
+   How Django static files work in production (Apache version)
 
 Now let's examine how the configuration above produces these results.
 The directive ``ProxyPass / http://localhost:8000/`` tells Apache that,

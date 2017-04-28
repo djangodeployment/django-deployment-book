@@ -180,6 +180,9 @@ html_show_copyright = False
 # Output file base name for HTML help builder.
 htmlhelp_basename = 'DeployingDjangoonasingleDebianorUbuntuserverdoc'
 
+# Number figures
+numfig = True
+
 
 # -- Options for LaTeX output ---------------------------------------------
 
