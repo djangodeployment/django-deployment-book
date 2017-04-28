@@ -186,6 +186,11 @@ quickly. We will store them in ``/var/opt/$DJANGO_PROJECT/media``.
    mkdir /var/opt/$DJANGO_PROJECT/media
    chown $DJANGO_USER /var/opt/$DJANGO_PROJECT/media
 
+One of the differences with static files is that we changed the
+ownership of ``/var/opt/$DJANGO_PROJECT/media`` to $DJANGO_USER.  The
+reason is that Django needs to be writing there each time the user
+uploads a file or requests to delete a file.
+
 Add the following to ``/etc/opt/$DJANGO_PROJECT/settings.py``::
 
    MEDIA_ROOT = '/var/opt/$DJANGO_PROJECT/media/'
@@ -216,18 +221,13 @@ and the following at the end of the ``VirtualHost`` block:
 
 Recompile your settings, reload the web server, and it's ready.
 
-One of the differences with static files is that we changed the
-ownership of ``/var/opt/$DJANGO_PROJECT/media`` to $DJANGO_USER.
-The reason is that Django needs to be able to be writing there each time
-the user uploads a file, or each time the user asks to delete a file.
-
 File locations
 --------------
 
 Your static and media files are now served properly by the web server
 instead of the Django development server, and I hope you understand
 clearly what we've done. Let's take a break and discuss the file
-locations that I've chosen, which are the following:
+locations that I've chosen:
 
 ============== =================================
 Program files  /opt/$DJANGO_PROJECT
@@ -257,18 +257,12 @@ several reasons. The first one is purely educational. When you get too
 used to the simple setup, you might configure always the same
 ``STATIC_ROOT``, without really understanding what it does. The clean
 separation of directories should also have helped you get a grip on
-``PYTHONPATH`` and ``DJANGO_SETTINGS_MODULE``. I hope you now understand
-them clearly and not just mechanically copying and pasting them from
-examples with only a vague idea of how they are supposed to work.
+``PYTHONPATH`` and ``DJANGO_SETTINGS_MODULE``.
 
-Separating in many directories is also cleaner and applies in many
-different situations. We have assumed so far that your $DJANGO_PROJECT
-is a repository which you can clone or copy somewhere, but what if you
-turn your project into a reusable pip-installable application? In that
-case there will be no ``/srv/$DJANGO_PROJECT`` or
-``/opt/$DJANGO_PROJECT``. The tweak required with the split
-directories scheme is minimal. Likewise if you package your application
-into a ``.deb`` package.
+Separating in many directories is also cleaner and applies to many
+different situations. If a Django application is packaged as a ``.deb``
+package, or as a pip-installable package, the tweak required with the
+split directories scheme is minimal.
 
 Finally, separating the directories makes it easier to backup only what
 is needed. My backup solution (which we will see in the chapters about
