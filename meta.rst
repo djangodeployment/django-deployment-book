@@ -1,5 +1,5 @@
 | Deploying Django on a single Debian or Ubuntu server
-| Edition DEV
+| Edition DEV (DATE)
 
 © 2016–2017 Antonis Christofides
 

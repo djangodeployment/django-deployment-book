@@ -205,11 +205,17 @@ latex_elements = {
     # generate the one it would normally generate.
     'tableofcontents': '',
 
+    # Custom cover
+    'maketitle': r'\includepdf{../../cover.pdf}',
+
     # Minor changes in Latex formatting
     'preamble': textwrap.dedent(r'''
         % Margins 2cm, useful for a5paper, must be changed in other sizes
         \usepackage{anysize}
         \marginsize{2cm}{2cm}{2cm}{2cm}
+
+        % Use pdfpages for front cover
+        \usepackage{pdfpages}
 
         % Use txtt fontface for verbatim, and make it slightly smaller if inline
         \renewcommand{\code}[1]{\texttt{\small{#1}}}
@@ -337,7 +343,7 @@ epub_copyright = u'2016, Antonis Christofides'
 #epub_uid = ''
 
 # A tuple containing the cover image and cover page html template filenames.
-#epub_cover = ()
+epub_cover = ('_static/cover.png', 'epub-cover.html')
 
 # A sequence of (type, uri, title) tuples for the guide element of content.opf.
 #epub_guide = ()
