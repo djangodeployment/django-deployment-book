@@ -92,7 +92,7 @@ another static file that you expect to see, or browse the directory
 
 .. _how_static_files_work_nginx:
 
-.. figure:: how-static-files-work-nginx.png
+.. figure:: _static/how-static-files-work-nginx.png
 
    How Django static files work in production (nginx version)
 
@@ -149,7 +149,7 @@ another static file that you expect to see, or browse the directory
 
 .. _how_static_files_work_apache:
 
-.. figure:: how-static-files-work-apache.png
+.. figure:: _static/how-static-files-work-apache.png
 
    How Django static files work in production (Apache version)
 
