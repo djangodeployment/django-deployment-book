@@ -221,6 +221,10 @@ latex_elements = {
         \renewcommand{\code}[1]{\texttt{\small{#1}}}
         \renewcommand{\ttdefault}{txtt}
 
+        % Don't give floats their own page, unless they're more than 80% of
+        % the page.
+        \renewcommand{\floatpagefraction}{.8}
+
         % See http://stackoverflow.com/questions/3882770/. We've copied the following
         % from sphinx.sty, and changed it so that it does not show the release name in
         % the page header. (Not sure it's needed though, maybe just keeping the

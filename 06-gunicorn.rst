@@ -135,7 +135,8 @@ Here is what these parameters mean:
       If your server gets busy, the Linux ``top`` command will show you
       useful information about the amount of free RAM, the RAM consumed
       by your Django project (and other system processes), and the CPU
-      usage for various processes.
+      usage for various processes. You can read more about it in
+      :ref:`top_memory` and :ref:`top_cpu`.
 
 ``--log-file=/var/log/$DJANGO_PROJECT/gunicorn.log``
    I believe this is self-explanatory.
@@ -358,6 +359,266 @@ such as FreeBSD, so if you use both GNU/Linux and FreeBSD you can use
 the same command in both. The ``systemctl`` version may be more
 consistent with other systemd commands, like the ones for enabling and
 disabling services. Use whichever you like.
+
+.. _top_memory:
+
+The top command: memory management
+----------------------------------
+
+If your server gets busy and you wonder whether its RAM and CPU are
+enough, the Linux ``top`` command is a useful tool. Execute it simply by
+entering ``top``. You can exit ``top`` by pressing ``q`` on the
+keyboard.
+
+When you execute ``top`` you will see an image similar to :numref:`top`.
+
+.. _top:
+
+.. figure:: _static/top.png
+
+   The ``top`` command
+
+Let's examine **available RAM** first, which in :numref:`top` is
+indicated in the red box. The output of ``top`` is designed so that it
+fits in an 80-character wide terminal. For the RAM, the five values
+(total, used, free, buffers, and cached) can't fit on the line that is
+labeled "KiB Mem", so the last one has been moved to the line below,
+that is, the "cached Mem" indication belongs in "KiB Mem" and not in
+"KiB Swap".
+
+The "total" amount of RAM is simply the total amount of RAM; it is as
+much as you asked your virtual server to have. The "used" plus the
+"free" equals the total. Linux does heavy caching, which I explain
+below, so the "used" should be close to the total, and the "free" should
+be close to zero.
+
+Since RAM is much faster than the disk, Linux caches information from
+the disk in RAM. It does so in a variety of ways:
+
+* If you open a file, read it, close it, then you open it
+  again and read it again, the second time it will be much faster; this
+  is because Linux has cached the contents of the file in RAM.
+* Whenever you write a file, you are likely to read it again, so Linux
+  caches it.
+* In order to speed up disk writing, Linux doesn't actually write to the
+  disk when your program says ``f.write(data)``, not even when you close
+  the file, not even when your program ends. It keeps the data in the
+  cache and writes it later, attempting to optimize disk head movement.
+  This is why some data may be lost when the system is powered off
+  instead of properly shut down.
+
+The part of RAM that is used for Linux's disk cache is what ``top``
+shows as "buffers" and "cached".  Buffers is also a kind of cache, so it
+is the sum of "buffers" and "cache" that matters (the difference between
+"buffers" and "cached" doesn't really matter unless you are a kernel
+developer).  "Buffers" is usually negligible, so it's enough to only
+look at "cache".
+
+Linux doesn't want your RAM sitting down doing nothing, so if there is
+RAM available, it will use it for caching. Give it more RAM and it will
+cache more. If your server has a substantial amount of RAM labeled
+"free", it may mean that you have so much RAM that Linux can't fill it
+in even with its disk cache. This probably means the machine is larger
+than it needs to be, so it's a waste of resources. If, on the other
+hand, the cache is very small, this may mean that the system is short on
+RAM. On a healthy system, the cache should be 20–50% of RAM.
+
+Since we are talking about RAM, let's also examine the **amount of RAM
+used by processes**. By default ``top`` sorts processes by CPU usage,
+but you can type ``M`` (Shift + ``m``) to sort by memory usage (you can
+go back to sort by CPU usage by typing ``P``). The RAM used by each
+process is indicated by the "RES" column in KiB and the "%MEM" column in
+percentage.
+
+There are two related columns; "VIRT", for virtual memory, and "SHR",
+for shared memory. First of all, you need to forget the Microsoft
+terminology. Windows calls "virtual memory" what everyone else calls
+"swap space"; and what everyone else calls "virtual memory" is a very
+different thing from swap space. In order to better understand what
+virtual memory is, let's see it with this C program (it doesn't matter
+if you don't speak C):
+
+.. code-block:: c
+
+   #include <stdio.h>
+   #include <stdlib.h>
+   #include <errno.h>
+   #include <string.h>
+
+   int main() {
+       char c;
+       void *p;
+
+       /* Allocate 2 GB of memory */
+       p = malloc(2L * 1024 * 1024 * 1024);
+       if (!p) {
+           fprintf(stderr, "Can't allocate memory: %s\n",
+                   strerror(errno));
+           exit(1);
+       }
+
+       /* Do nothing until the user presses Enter */
+       fputs("Press Enter to continue...", stderr);
+       while((c = fgetc(stdin)) != EOF && c != '\n')
+           ;
+
+       /* Free memory and exit */
+       free(p);
+       exit(0);
+   }
+
+When I run this program on my laptop, and while it is waiting for me to
+press Enter, this is what ``top`` shows about it::
+
+   . PID ...    VIRT    RES    SHR S  %CPU %MEM ... COMMAND
+   13687 ... 2101236    688    612 S   0.0  0.0 ... virtdemo
+
+It indicates 2 GB VIRT, but actually uses less than 1 MB of RAM, while
+swap usage is still at zero. Overall, running the program has had a
+negligible effect on the system. The reason is that the ``malloc``
+function has only allocated virtual memory; "virtual" as in "not real".
+The operating system has provided 2 GB of virtual address space to the
+program, but the program has not used any of that. If the program had
+used some of this virtual memory (i.e. if it had written to it), the
+operating system would have automatically allocated some RAM and would
+have mapped the used virtual address space to the real address space in
+the RAM.
+
+So virtual memory is neither swap nor swap plus RAM; it's virtual. The
+operating system maps only the used part of the process's virtual memory
+space to something real; usually RAM, sometimes swap. Many programs
+allocate much more virtual memory than they actually use. For this
+reason, the VIRT column of ``top`` is not really useful.  The RES
+column, that stands for "resident", indicates the part of RAM actually
+used.
+
+The SHR column indicates how much memory the program potentially shares
+with other processes. Usually all of that memory is included in the RES
+column. For example, in :numref:`top`, there are four ``apache2``
+processes which I show again here::
+
+   . PID ...    VIRT    RES    SHR S  %CPU %MEM ... COMMAND
+   23268 ...  458772  37752  26820 S   0.2  3.7 ... apache2
+   16481 ...  461176  55132  41840 S   0.1  5.4 ... apache2
+   23237 ...  455604  14884   9032 S   0.1  1.5 ... apache2
+   23374 ...  459716  38876  27296 S   0.1  3.8 ... apache2
+
+It is unlikely that the total amount of RAM used by these four processes
+is the sum of the RES column (about 140 MB); it is more likely that
+something like 9 MB is shared among all of them, which would bring the
+total to about 110 MB. Maybe even less. They might also be sharing
+something (such as system libraries) with non-apache processes. It is
+not really possible to know how much of the memory marked as shared is
+actually being shared, and by how many processes, but it is something
+you need to take into account in order to explain why the total memory
+usage on your system is less than the sum of the resident memory for all
+processes.
+
+Let's now talk about **swap**. Swap is disk space used for temporarily
+writing (swapping) RAM. Linux uses it in two cases. The first one is if
+a program has actually used some RAM but has left it unused for a long
+time. If a process has written something to RAM but has not read it back
+for several hours, it means the RAM is being wasted. Linux doesn't like
+that, so it may save that part of RAM to the disk (to the swap space),
+which will free up the RAM for something more useful (such as caching).
+This is the case in :numref:`top`. The system is far from low on memory,
+and yet it has used a considerable amount of swap space. The only
+explanation is that some processes have had unused data in RAM for too
+long. When one of these processes eventually attempts to use swapped
+memory, the operating system will move it from the swap space back to
+the RAM (if there's not enough free RAM, it will swap something else or
+discard some of its cache).
+
+The second case in which Linux will use swap is if it's low on memory.
+This is a bad thing to happen and will greatly slow down the system,
+sometimes to a grinding halt. You can understand that this is the case
+from the fact that swap usage will be considerable while at the same
+time the free and cached RAM will be very low. Sometimes you will be
+unable to even run ``top`` when this happens.
+
+Whereas in Windows the swap space (confusingly called "virtual memory")
+is a file, on Linux it is usually a disk partition. You can find out
+where swap is stored on your system by examining the contents of file
+``/proc/swaps``, for example by executing ``cat /proc/swaps``. (The
+"files" inside the ``/proc`` directory aren't real; they are created by
+the kernel and they do not exist on the disk.  ``cat`` prints the
+contents of files, similar to ``less``, but does not paginate.)
+
+.. _top_cpu:
+
+The top command: CPU usage
+--------------------------
+
+The third line of ``top`` has eight numbers which add up to 100%. They
+are user, system, nice, idle, waiting, hardware interrupts, software
+interrupts, and steal, and indicate where the CPU spent its time in the
+last three seconds:
+
+* **us** (user) and **sy** (system) indicate how much of its time the
+  processor was running programs in user mode and in kernel mode. Most
+  code runs in user mode; but when a process asks the Linux kernel to do
+  something (allocate memory, access the disk, network, or other device,
+  start another process, etc.), the kernel switches to kernel mode, which
+  means it has some priviliges that user mode doesn't have. (For example,
+  kernel mode has access to all RAM and can modify the mapping between
+  the processes' virtual memory and RAM/swap; whereas user mode simply
+  has access to the virtual address space and doesn't know what happens
+  behind the scenes.)
+* **ni** (nice) indicates how much of its time the processor was running
+  with a positive "niceness" value. If many processes need the CPU at
+  the same time, a "nice" process has lower priority. The "niceness" is
+  a number up to 19. A process with a "niceness" of 19 will practically
+  only run when the CPU would otherwise be idle. For example, the GNOME
+  desktop environment's Desktop Search finds stuff in your files, and it
+  does so very fast because it uses indexes. These indexes are updated
+  in the background by the "tracker" process, which runs with a
+  "niceness" of 19 in order to not make the rest of the system slower.
+  Processes may also run with a negative niceness (up to -20), which
+  means they have higher priority. In the list of processes, the NI
+  column indicates the "niceness". Most processes have the default zero
+  niceness, and it is unlikely you will ever need to know more about all
+  that.
+* **id** (idle) and **wa** (waiting) indicate how much time the CPU was
+  sitting down doing nothing. "Waiting" is a special case of idle; it
+  means that while the CPU was idle there was at least one process
+  waiting for disk I/O. A high value of "waiting" indicates heavy disk
+  usage.
+* The meaning of time spent in **hi** (hardware interrupts) and **si**
+  (software interrupts) is very technical. If this is non-negligible, it
+  indicates heavy I/O (such as disk or network).
+* **st** (steal) is for virtual machines. When nonzero, it indicates
+  that for that amount of time the virtual machine needed to run
+  something on the (virtual) CPU, but it had to wait because the real
+  CPU was unavailable, either because it was doing something else (e.g.
+  servicing another virtual machine on the same host) or because of
+  reaching the CPU usage quota.
+
+If the machine has more than one CPUs or cores, the "%Cpu(s)" line of
+``top`` shows data collectively for all CPUs; but you can press ``1`` to
+toggle between that and showing information for each individual CPU.
+
+In the processes list, the %CPU column indicates the amount of time the
+CPU was working for that process, either in user mode or in kernel mode
+(when kernel code is running, most of the time it is in order to service
+a process, so this time is accounted for in the process). The %CPU
+column can add up to more than 100% if you have more than one cores; for
+four cores it can add up to 400% and so on.
+
+Finally, let's discuss about the CPU load. When your system is doing
+nothing, the CPU load is zero. If there is one process using the CPU,
+the load is one. If there is one process using the CPU and another
+process that wants to run and is queued for the CPU to become available,
+the load is two. The three numbers in the orange box in :numref:`top`
+are the load average in the last one, five, and 15 minutes. The load
+average should generally be less than the number of CPU cores, and
+preferably under 0.7 times the number of cores.  It's OK if it spikes
+sometimes, so the load average for the last minute can occasionally go
+over the number of cores, but the 5- or 15-minute average should stay
+low. For more information about the load average, there's an excellent
+blog post by Andre Lewis, `Understanding Linux CPU Load - when should
+you be worried?`_
+
+.. _Understanding Linux CPU Load - when should you be worried?: http://blog.scoutapp.com/articles/2009/07/31/understanding-load-averages
 
 
 Chapter summary
