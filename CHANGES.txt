@@ -1,3 +1,22 @@
+2.0 (2017-05-05)
+----------------
+
+- New cover.
+- Chapters and sections are now numbered in epub.
+- Figures are now numbered.
+- Improved static files figures.
+- Added two sections explaining the "top" command, and while at it,
+  explained a great deal about memory and process management.
+- Added section "Clearing sessions" to the settings chapter.
+- The scheme with settings/base.py and other files that import from each
+  other is no longer advocated. Instead, the default Django layout is
+  assumed.
+- Gevent is no longer proposed.
+- Pointed out the risk of a nightmarish migration later if using SQLite
+  now.
+- Fixed a few typos, trivial errors, and made some language
+  improvements.
+
 1.0 (2017-01-26)
 ----------------
 
