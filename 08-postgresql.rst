@@ -285,9 +285,9 @@ Web applications changed that. Instead of PostgreSQL managing the users
 and their permissions, we have a single PostgreSQL user,
 $DJANGO_DB_USER, as which Django connects to PostgreSQL, and this user
 has full permissions on the $DJANGO_DB database. The actual users and
-their permissions are managed by ``django.contrib.admin``. What a user
+their permissions are managed by ``django.contrib.auth``. What a user
 can or cannot do is decided by Django, not by PostgreSQL. This is a pity
-because ``django.contrib.admin`` (or the equivalent in other web
+because ``django.contrib.auth`` (or the equivalent in other web
 frameworks) largely duplicates functionality that already exists in the
 RDBMS, and because having the RDBMS check the permissions is more robust
 and more secure. I believe that the reason web frameworks were developed
