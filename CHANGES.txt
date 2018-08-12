@@ -1,3 +1,12 @@
+2.1 (2018-08-13)
+----------------
+
+- License has been changed to CC-by-nc-sa
+- The book used to have some prerequisite knowledge and, if the reader
+  didn't have it, it recommended to take the free "Linux servers 101"
+  course. This is no longer the case. Instead, the content of the course
+  has been incorporated in the first chapter of the book.
+
 2.0 (2017-05-05)
 ----------------
 
