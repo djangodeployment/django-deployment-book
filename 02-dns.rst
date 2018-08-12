@@ -316,15 +316,15 @@ own name servers to act as the domain's name servers, and also tells
 the upstream name servers the ip addresses and/or names of the domain's
 name servers. While this is normally sufficient, there are cases when
 you will want to use other name servers instead of the registrar's name
-servers. For example, Digital Ocean offers name servers and a web
-interface to configure them, and if Digital Ocean's web interface is
+servers. For example, DigitalOcean offers name servers and a web
+interface to configure them, and if DigitalOcean's web interface is
 easier, or if it integrates well with droplets making configuration
 faster, you might want to use that.  In such a case, you can go to the
 registrar's web interface and specify different name servers. The
 registrar will tell the upstream name servers which are your new name
 servers. It can't setup the new name servers themselves, you have to do
-that yourself (e.g. via the Digital Ocean's web interface if you are
-using Digital Ocean's name servers).
+that yourself (e.g. via the DigitalOcean's web interface if you are
+using DigitalOcean's name servers).
 
 In this case, you must be aware that while, as we saw in the previous
 section, you can configure the TTL for the DNS records of your domain,
