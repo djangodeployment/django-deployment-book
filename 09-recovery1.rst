@@ -187,6 +187,7 @@ them later. I will be calling them $ACC_ID and $APP_KEY.
 
 .. _setting_up_duplicity_and_duply:
 
+
 Setting up duplicity and duply
 ------------------------------
 
@@ -378,7 +379,7 @@ Let's check again the duply configuration file,
     virtual server provider can read our files anyway, since they are
     stored in our virtual server, in a data centre owned by the
     provider. Making it impossible for Backblaze to read our files
-    doesn't achieve much if Digital Ocean can read them. Encrypting the
+    doesn't achieve much if DigitalOcean can read them. Encrypting the
     backups is often more trouble than what it's worth, so we just
     disable it.
 
@@ -610,7 +611,7 @@ specified two sections ago is this::
 One more directory that is giving me headaches is ``/var/lib/lxcfs``.
 Like ``/proc``, it creates error messages when you try to walk through.
 It is related to LXC, a virtual machine technology, which seems to be
-installed on Ubuntu by default (at least in Digital Ocean). I think it
+installed on Ubuntu by default (at least in DigitalOcean). I think it
 could be a bad idea to exclude it, in case you start using LXC in the
 future and forget it's not being backed up. I just remove LXC with ``apt
 purge lxc-common lxcfs`` and I'm done, as this also removes the

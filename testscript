@@ -5,6 +5,9 @@
 # The script is manually written and maintained, i.e. copied and pasted from
 # the book. It isn't smart enough to know when the scripts in the book have
 # changed.
+#
+# Before running, copy django_deployment_vars.example to django_deployment_vars
+# and edit it.
 
 set -e
 
