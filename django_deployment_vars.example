@@ -1,0 +1,25 @@
+DOMAIN=example.com
+
+# You should probably leave these as is
+DJANGO_PROJECT=django_deployment_test
+DJANGO_PROJECT_REPOSITORY=http://github.com/djangodeployment/django_deployment_test.git
+
+# Test with both Python 2 and 3
+PYTHON=3
+
+# apache or nginx
+WEB_SERVER=apache
+
+# Django email settings
+ADMIN_NAME=Admin
+ADMIN_EMAIL_ADDRESS=admin@example.com
+EMAIL_HOST=smtp.emailprovider.com
+EMAIL_HOST_USER=username
+EMAIL_HOST_PASSWORD=topsecret
+
+# These settings are for Backblaze b2. NICK and SERVER_NAME are just used to
+# name the backup directory, $NICK-$SERVER_NAME.
+NICK=alice
+SERVER_NAME=host15
+ACC_ID=123456789abcdef0
+APP_KEY=topsecret
