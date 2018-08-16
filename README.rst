@@ -18,6 +18,13 @@ Compiling the source
     make latexpdf
     make epub
 
+You can compile with Docker instead
+
+::
+
+    docker build . -t django-deployment-book
+    docker run -v "$(pwd):/opt/django" --rm django-deployment-book
+
 After the above, the PDF should be in ``_build/latex`` and the epub in
 ``_build/epub``.
 
