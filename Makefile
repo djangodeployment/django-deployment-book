@@ -53,10 +53,7 @@ clean:
 	rm -rf $(BUILDDIR)/*
 
 html:
-	mv index.rst index.rst.bak
-	cp index.rst-epub index.rst
 	$(SPHINXBUILD) -b html $(ALLSPHINXOPTS) $(BUILDDIR)/html
-	mv index.rst.bak index.rst
 	@echo
 	@echo "Build finished. The HTML pages are in $(BUILDDIR)/html."
 
@@ -105,10 +102,7 @@ devhelp:
 	@echo "# devhelp"
 
 epub:
-	mv index.rst index.rst.bak
-	cp index.rst-epub index.rst
 	$(SPHINXBUILD) -b epub $(ALLSPHINXOPTS) $(BUILDDIR)/epub
-	mv index.rst.bak index.rst
 	@echo
 	@echo "Build finished. The epub file is in $(BUILDDIR)/epub."
 

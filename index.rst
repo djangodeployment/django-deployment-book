@@ -1,4 +1,18 @@
-We have a different index file for latex and for html/epub. I tried with
-".. only::" but it doesn't work properly (probably because of a bug,
-probably triggered by the fact that the ".. only::" contains a toctree).
-The Makefile automatically replaces the index with the one needed.
+====================================================
+Deploying Django on a single Debian or Ubuntu server
+====================================================
+
+.. toctree::
+   :numbered:
+
+   01-getting-started
+   02-dns
+   03-users-and-directories
+   04-web-server
+   05-static-files
+   06-gunicorn
+   07-settings
+   08-postgresql
+   09-recovery1
+   10-recovery2
+   meta_epub
