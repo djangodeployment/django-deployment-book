@@ -10,7 +10,7 @@ aren't interested in learning more about what you should choose, pick up
 nginx.  Apache is also widely used, and it is preferable in some cases.
 If you have any reason to prefer it, go ahead and use it.
 
-If you want don't know what to do, choose nginx. If you want to know
+If you don't know what to do, choose nginx. If you want to know
 more about the pros and cons of each one, I have written `a blog post
 about it`_.
 
