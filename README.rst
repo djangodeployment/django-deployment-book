@@ -5,7 +5,9 @@ Book on Django Deployment
 Get the book
 ============
 
-Get the compiled book at the "releases" page.
+`Read online at readthedocs`_ or get it in epub or pdf at the "releases" page.
+
+.. _read online at readthedocs: https://djangodeployment.readthedocs.io/
 
 Compiling the source
 ====================
