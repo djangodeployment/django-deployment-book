@@ -212,6 +212,25 @@ later it will have a bit more. Your
    yourself. (Occasionally I use DJANGO_PROJECT without the leading
    dollar sign, in order to get the syntax highlighter to work.)
 
+.. note::
+
+   These settings might give you the error "The SECRET_KEY setting must
+   not be empty", or "Unknown command: 'collectstatic'", or some other
+   error that indicates a problem with the settings. If this happens,
+   a likely explanation is that this line at the top of your production
+   settings isn't working correctly::
+
+       from DJANGO_PROJECT.settings import *
+
+   It may be that, in your Django project, ``settings`` is a directory
+   that has no ``__init__.py`` file or an empty ``__init__.py`` file.
+   Maybe you have to change the line to this::
+
+       from DJANGO_PROJECT.settings.base import *
+
+   Check what your project's settings file actually is, and import from
+   that one.
+
 Let's now **secure the production settings**. We don't want other users
 of the system to be able to read the file, because it contains sensitive
 information. Maybe not yet, but after a few chapters it is going to have
