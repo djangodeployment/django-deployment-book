@@ -10,6 +10,27 @@ project in a proper place.
 I will be using ``$DJANGO_PROJECT`` as the name of your Django
 project.
 
+The data directory
+------------------
+
+As I already hinted, our data directory is going to be
+``/var/opt/$DJANGO_PROJECT``. It is standard policy for programs
+installed in ``/opt`` to put their data in ``/var/opt``. Most notably,
+we will store media files in there (in a later chapter).  We will also
+store the SQLite file there. Usually in production we use a
+different RDBMS, but we will deal with this in a later chapter as well.
+So, let's now prepare the data directory:
+
+.. code-block:: bash
+
+    mkdir -p /var/opt/$DJANGO_PROJECT
+    chown $DJANGO_USER /var/opt/$DJANGO_PROJECT
+
+Besides creating the directory, we also changed its owner to
+``$DJANGO_USER``. This is necessary because Django will be needing to
+write data in that directory, and it will be running as that user, so it
+needs permission to do so.
+
 .. _creating_user:
 
 Creating a user and group
@@ -137,27 +158,6 @@ The option ``-x /opt/$DJANGO_PROJECT/venv/`` tells compileall to exclude
 directory  ``/opt/$DJANGO_PROJECT/venv`` from compilation. This is
 because the virtualenv takes care of its own compilation and we should
 not interfere.
-
-The data directory
-------------------
-
-As I already hinted, our data directory is going to be
-``/var/opt/$DJANGO_PROJECT``. It is standard policy for programs
-installed in ``/opt`` to put their data in ``/var/opt``. Most notably,
-we will store media files in there (in a later chapter).  We will also
-store the SQLite file there. Usually in production we use a
-different RDBMS, but we will deal with this in a later chapter as well.
-So, let's now prepare the data directory:
-
-.. code-block:: bash
-
-    mkdir -p /var/opt/$DJANGO_PROJECT
-    chown $DJANGO_USER /var/opt/$DJANGO_PROJECT
-
-Besides creating the directory, we also changed its owner to
-``$DJANGO_USER``. This is necessary because Django will be needing to
-write data in that directory, and it will be running as that user, so it
-needs permission to do so.
 
 .. _the_log_directory:
 
